@@ -21,7 +21,7 @@ Other pages refer back to these for set-up that would otherwise have to be repea
 ### Python
 
   * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar without any custom frontends (for plotting) or backends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
-  * {% include progress.html complete=70 %} [Plotting on the commandline](python-commandline): How to pipe data from grep, sed, and awk into Histogrammar in UNIX shell scripts.
+  * {% include progress.html complete=0 %} [Plotting on the commandline](python-commandline): How to pipe data from grep, sed, and awk into Histogrammar in UNIX shell scripts.
 
 ## Plotting frontends
 
