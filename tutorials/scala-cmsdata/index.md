@@ -8,7 +8,7 @@ toc: false
 
 Most of the examples must use _some_ dataset, so I prepared a sample of CMS public data to be read with no dependencies. The data came from the [CERN Open Data portal](http://opendata.cern.ch/record/203); it is 50 fb<sup>-1</sup> of highly processed particle physics data from the [CMS experiment](http://cms.web.cern.ch/), with 469,384 events selected by the 24 GeV/c isolated muon trigger.
 
-For convenience, it has been converted to compressed JSON. The code that reads it into classes is provided below for you to copy-paste, rather than a JAR to load, because I want you to see how it's done. This code is a good illustration of Scala.
+For convenience, it has been converted to compressed JSON. The code that reads it into classes is provided below for you to copy-paste, rather than a JAR to load, because I want you to see how it's done and you may want to modify it.
 
 ## Loading the data
 
@@ -18,11 +18,14 @@ Start a Scala prompt with the Histogrammar JAR loaded. That is, do
 scala -cp histogrammar-0.7.jar
 ```
 
-for an appropriate version of Histogrammar to get a `scala>` prompt. Type `:paste` to enter paste mode, copy the code below into your terminal, and hit ctrl-D to exit paste mode.
+for an appropriate version of Histogrammar to get a `scala>` prompt. Then _either_
 
-If all goes well, you'll have an iterator named `events` that pulls data from the web as needed. You get an event by repeatedly calling `events.next()`. To restart the iterator from the beginning, re-run the last line to create a new `events` object (no need for paste mode for a single line).
+  * enter paste mode by typing `:paste`, copy-paste the code into your terminal, and hit ctrl-D to exit paste mode, _or_
+  * download the raw code and type `:load /path/to/scala-cmsdata.scala` to load it.
 
-The code to copy-paste ([link to raw code](../data/scala-cmsdata.scala)):
+If all goes well, you'll have an iterator named `events` that pulls data from the web as needed. You get events by repeatedly calling `events.next()`. To restart the iterator from the beginning, re-run the last line to create a new `events` object (no need to enter paste mode for a single line).
+
+The code to copy-paste is below and the [link to raw code is here](../../data/scala-cmsdata.scala).
 
 ```scala
 import org.dianahep.histogrammar.json._

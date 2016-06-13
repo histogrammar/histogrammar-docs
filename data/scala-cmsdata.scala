@@ -49,41 +49,41 @@ case class Event(jets: Seq[Jet], muons: Seq[Muon], electrons: Seq[Electron], pho
 // functions for reading from JSON, each packaged up in a namespace
 object Jet {
   def fromJson(params: Map[String, JsonNumber]) =
-    Jet(params("px").toDouble,
-        params("py").toDouble,
-        params("pz").toDouble,
-        params("E").toDouble,
-        params("btag").toDouble)
+    new Jet(params("px").toDouble,
+            params("py").toDouble,
+            params("pz").toDouble,
+            params("E").toDouble,
+            params("btag").toDouble)
 }
 object Muon {
   def fromJson(params: Map[String, JsonNumber]) =
-    Muon(params("px").toDouble,
-         params("py").toDouble,
-         params("pz").toDouble,
-         params("E").toDouble,
-         params("q").toInt,
-         params("iso").toDouble)
-}
-object Electron {
-  def fromJson(params: Map[String, JsonNumber]) =
-    Electron(params("px").toDouble,
+    new Muon(params("px").toDouble,
              params("py").toDouble,
              params("pz").toDouble,
              params("E").toDouble,
              params("q").toInt,
              params("iso").toDouble)
 }
+object Electron {
+  def fromJson(params: Map[String, JsonNumber]) =
+    new Electron(params("px").toDouble,
+                 params("py").toDouble,
+                 params("pz").toDouble,
+                 params("E").toDouble,
+                 params("q").toInt,
+                 params("iso").toDouble)
+}
 object Photon {
   def fromJson(params: Map[String, JsonNumber]) =
-    Photon(params("px").toDouble,
-           params("py").toDouble,
-           params("pz").toDouble,
-           params("E").toDouble,
-           params("iso").toDouble)
+    new Photon(params("px").toDouble,
+               params("py").toDouble,
+               params("pz").toDouble,
+               params("E").toDouble,
+               params("iso").toDouble)
 }
 object MET {
   def fromJson(params: Map[String, JsonNumber]): MET =
-    MET(params("px").toDouble, params("py").toDouble)
+    new MET(params("px").toDouble, params("py").toDouble)
 }
 object Event {
   def fromJson(params: JsonObject) = {
@@ -93,7 +93,7 @@ object Event {
     val JsonArray(photons @ _*) = params("photons")
     val met = params("MET").asInstanceOf[JsonObject]
     val JsonInt(numPrimaryVertices) = params("numPrimaryVertices")
-    Event(
+    new Event(
       jets collect {case j: JsonObject => Jet.fromJson(j.to[JsonNumber].toMap)},
       muons collect {case j: JsonObject => Muon.fromJson(j.to[JsonNumber].toMap)},
       electrons collect {case j: JsonObject => Electron.fromJson(j.to[JsonNumber].toMap)},
