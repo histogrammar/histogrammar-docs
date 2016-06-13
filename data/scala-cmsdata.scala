@@ -104,16 +104,23 @@ object Event {
 }
 
 // event data iterator
-case class EventIterator(location: String) extends Iterator[Event] {
+case class EventIterator(location: String = "http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz") extends Iterator[Event] {
   // use Java libraries to stream and decompress data on-the-fly
   val scanner = new java.util.Scanner(
     new java.util.zip.GZIPInputStream(
       new java.net.URL(location).openStream))
 
   // read one ahead so that hasNext can effectively "peek"
-  private def getNext() = Json.parse(scanner.nextLine) collect {
-    case event: JsonObject => Event.fromJson(event)
-  }
+  private def getNext() =
+    try {
+      Json.parse(scanner.nextLine) collect {
+        case event: JsonObject => Event.fromJson(event)
+      }
+    }
+    catch {
+      case err: java.util.NoSuchElementException => None
+    }
+
   private var theNext = getNext()
 
   // iterator interface
@@ -125,4 +132,4 @@ case class EventIterator(location: String) extends Iterator[Event] {
   }
 }
 
-val events = EventIterator("http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz")
+val events = EventIterator()

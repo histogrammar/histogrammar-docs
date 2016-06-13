@@ -23,7 +23,7 @@ for an appropriate version of Histogrammar to get a `scala>` prompt. Then _eithe
   * enter paste mode by typing `:paste`, copy-paste the code into your terminal, and hit ctrl-D to exit paste mode, _or_
   * download the raw code and type `:load /path/to/scala-cmsdata.scala` to load it.
 
-If all goes well, you'll have an iterator named `events` that pulls data from the web as needed. You get events by repeatedly calling `events.next()`. To restart the iterator from the beginning, re-run the last line to create a new `events` object (no need to enter paste mode for a single line).
+If all goes well, you'll have an iterator named `events` that pulls data from the web as needed. You get events by repeatedly calling `events.next()`. To restart the iterator from the beginning, do `val events = EventIterator()`.
 
 The code to copy-paste is below and the [link to raw code is here](../../data/scala-cmsdata.scala).
 
@@ -134,16 +134,23 @@ object Event {
 }
 
 // event data iterator
-case class EventIterator(location: String) extends Iterator[Event] {
+case class EventIterator(location: String = "http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz") extends Iterator[Event] {
   // use Java libraries to stream and decompress data on-the-fly
   val scanner = new java.util.Scanner(
     new java.util.zip.GZIPInputStream(
       new java.net.URL(location).openStream))
 
   // read one ahead so that hasNext can effectively "peek"
-  private def getNext() = Json.parse(scanner.nextLine) collect {
-    case event: JsonObject => Event.fromJson(event)
-  }
+  private def getNext() =
+    try {
+      Json.parse(scanner.nextLine) collect {
+        case event: JsonObject => Event.fromJson(event)
+      }
+    }
+    catch {
+      case err: java.util.NoSuchElementException => None
+    }
+
   private var theNext = getNext()
 
   // iterator interface
@@ -155,5 +162,5 @@ case class EventIterator(location: String) extends Iterator[Event] {
   }
 }
 
-val events = EventIterator("http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz")
+val events = EventIterator()
 ```

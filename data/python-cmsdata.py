@@ -140,7 +140,7 @@ class Event(object):
                      params["numPrimaryVertices"])
 
 # event data iterator
-def EventIterator(location):
+def EventIterator(location="http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz"):
     READ_BLOCK_SIZE = 1024*8
     webreader = urllib2.urlopen(location)
     gzipUnzipper = zlib.decompressobj(16 + zlib.MAX_WBITS)
@@ -162,4 +162,4 @@ def EventIterator(location):
                                if line != b""]
         yield eventsBatch.pop()
 
-events = EventIterator("http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
