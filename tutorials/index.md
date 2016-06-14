@@ -16,7 +16,7 @@ Other pages refer back to these for set-up that would otherwise have to be repea
 
 ### Scala
 
-  * {% include progress.html complete=10 %} [Basic use in Scala](scala-basic): Histogrammar without any custom frontends (for plotting) or backends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
+  * {% include progress.html complete=100 %} [Basic use in Scala](scala-basic): Histogrammar without any custom frontends (for plotting) or backends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
 
 ### Python
 
