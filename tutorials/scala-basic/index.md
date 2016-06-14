@@ -121,16 +121,16 @@ for (i <- 0 until 10) {
     print("%3.0f ".format(hist2d.values(i).values(j).entries))
   println()
 }
- 56  17  10   5   2   1   1   0   0   0
- 28  11   7   5   4   0   1   0   0   0
- 13   8   6   8   2   2   0   0   0   0
-  5   7   1   3   0   0   0   0   0   0
-  8   5   4   1   1   0   0   0   0   0
-  1   3   0   0   0   0   0   0   0   0
-  0   0   0   0   0   0   0   0   0   0
-  0   0   0   0   0   0   0   0   0   0
-  0   0   0   0   0   0   0   0   0   0
-  0   0   0   0   0   0   0   0   0   0
+ 34  24  13   6   3   2   1   0   0   0 
+ 36  25   6   1   2   1   0   0   0   0 
+ 11  11   9   1   1   1   0   0   0   0 
+  8   6   5   7   4   1   0   0   0   0 
+  3   0   2   2   0   0   0   0   0   0 
+  0   1   0   2   0   0   0   0   0   0 
+  0   0   0   0   0   0   0   0   0   0 
+  0   0   0   0   0   0   0   0   0   0 
+  0   0   0   0   0   0   0   0   0   0 
+  0   0   0   0   0   0   0   0   0   0 
 ```
 
 (Sorry, no ASCII-art for two-dimensional histograms... yet.)
@@ -149,40 +149,97 @@ println(count)
 <Counting 1000.0>
 ```
 
-though it's pretty unenlightening.
+though it's not very enlightening.
 
 ### Plotting anything
 
-The point of this is 
-
-
-
-
-
+With binning and counting, we can make histograms of any dimension, but that's still pretty limited. To plot anything, we only need a good set of aggregators and some imagination. For instance, suppose we have an aggregator that averages:
 
 ```scala
-val py_vs_px = Bin(10, 0, 100, {event: Event => event.met.px}, value = Deviate({event: Event => event.met.py}))
+val average = Average({event: Event => event.met.pt})
 
 for (event <- events.take(1000))
-  py_vs_px.fill(event)
+  average.fill(event)
 
-py_vs_px.println
+println(average)
+<Averaging mean=25.835336155264137>
 ```
 
-```
-                              -54.6097                         0            33.1137
-                              +--------------------------------+------------------+
-[  0 ,  10 ) -3.179 +-  19.47 |                   |----------+-|--------|         |
-[  10,  20 ) -2.187 +-  20.61 |                  |-----------+-|---------|        |
-[  20,  30 ) -1.805 +-  23.22 |                 |-------------+|-----------|      |
-[  30,  40 ) -7.202 +-  23.88 |              |-------------+---|--------|         |
-[  40,  50 )  5.060 +-  20.74 |                       |--------|--+-----------|   |
-[  50,  60 ) -6.742 +-  22.14 |               |------------+---|--------|         |
-[  60,  70 ) -8.515 +-  5.807 |                       |---+--| |                  |
-[  70,  80 ) -47.30 +-  0     |    +                           |                  |
-[  80,  90 )  0     +-  0     |                                |                  |
-[  90,  100)  0     +-  0     |                                |                  |
-                              +--------------------------------+------------------+
+We can combine this with binning to see the average per bin. For instance, we could compute the average pT (`event.met.pt`) per angle phi (`Math.atan2(event.met.py, event.met.px)`). In a cylindrically symmetric experiment, there should be no deviation versus phi.
+
+```scala
+val pt_vs_phi = Bin(10, 0, 2*Math.PI, {event: Event => event.met.pt},
+                    value = Average({event: Event => Math.atan2(event.met.py, event.met.px)}))
+
+val events = EventIterator()
+for (event <- events.take(100000))
+  pt_vs_phi.fill(event)
+
+pt_vs_phi.println
 ```
 
+The above produces
+
+```
+                            -0.180868                      0               0.138787
+                            +------------------------------+----------------------+
+[  0    ,  0.628) -0.1542   |    +                         |                      |
+[  0.628,  1.26 ) -0.1170   |           +                  |                      |
+[  1.26 ,  1.88 ) -0.1064   |            +                 |                      |
+[  1.88 ,  2.51 )  0.1121   |                              |                  +   |
+[  2.51 ,  3.14 ) -0.1184   |          +                   |                      |
+[  3.14 ,  3.77 ) -0.04311  |                       +      |                      |
+[  3.77 ,  4.40 )  0.008263 |                              |+                     |
+[  4.40 ,  5.03 ) -0.009705 |                            + |                      |
+[  5.03 ,  5.65 ) -0.07129  |                  +           |                      |
+[  5.65 ,  6.28 ) -0.1339   |        +                     |                      |
+                            +------------------------------+----------------------+
+```
+
+Oh no! That doesn't look flat versus phi&mdash; the points seem to be scattered around zero. Perhaps we need error bars.
+
+For that, we'd need to keep track of the variance in each bin, so consider an aggregator that accumulates the variance in addition to the mean.
+
+```scala
+val deviations = Deviate({event: Event => event.met.pt})
+
+for (event <- events.take(1000))
+  deviations.fill(event)
+
+println(deviations)
+<Deviating mean=25.66900474862857, variance=293.20009419456557>
+```
+
+Now we can build a classic "profile plot," which displays the mean and the error on the mean of each bin.
+
+```scala
+val pt_vs_phi = Bin(10, 0, 2*Math.PI, {event: Event => event.met.pt},
+                    value = Deviate({event: Event => Math.atan2(event.met.py, event.met.px)}))
+
+val events = EventIterator()
+for (event <- events.take(100000))
+  pt_vs_phi.fill(event)
+
+pt_vs_phi.println
+```
+
+And we see that the binwise averages are all consistent with zero.
+
+```
+                                        -0.954890                0         0.646430
+                                        +------------------------+----------------+
+[  0    ,  0.628) -0.1542   +-  0.2224  |               |-----+--|-|              |
+[  0.628,  1.26 ) -0.1170   +-  0.1187  |                  |--+--|                |
+[  1.26 ,  1.88 ) -0.1064   +-  0.09098 |                   |--+-|                |
+[  1.88 ,  2.51 )  0.1121   +-  0.08037 |                        ||-+-|           |
+[  2.51 ,  3.14 ) -0.1184   +-  0.06990 |                    |+-||                |
+[  3.14 ,  3.77 ) -0.04311  +-  0.06337 |                      |+||               |
+[  3.77 ,  4.40 )  0.008263 +-  0.05698 |                       ||+|              |
+[  4.40 ,  5.03 ) -0.009705 +-  0.05476 |                       ||-|              |
+[  5.03 ,  5.65 ) -0.07129  +-  0.05259 |                     |-+|                |
+[  5.65 ,  6.28 ) -0.1339   +-  0.04987 |                    |+| |                |
+                                        +------------------------+----------------+
+```
+
+### Alternative binning
 
