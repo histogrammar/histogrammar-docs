@@ -32,7 +32,7 @@ Other pages refer back to these for set-up that would otherwise have to be repea
 ### Python
 
   * {% include progress.html complete=0 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the [Bokeh plotting package in Python](http://bokeh.pydata.org/en/latest/).
-  * {% include progress.html complete=0 %} [Making ROOT plots](python-root): How to send Histogrammar data to the [ROOT analysis package in Python](http://root.cern.ch/).
+  * {% include progress.html complete=10 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the [ROOT analysis package in Python](http://root.cern.ch/).
   * {% include progress.html complete=0 %} [Making Matplotlib plots](python-root): How to send Histogrammar data to the [Matplotlib plotting package](http://matplotlib.org/).
 
 ## Aggregation backends
