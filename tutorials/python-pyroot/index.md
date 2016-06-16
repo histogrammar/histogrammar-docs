@@ -659,4 +659,76 @@ List((0.0,16.0), (1.0,12.0), (1.0,11.0), (1.0,12.0), (1.0,12.0), (1.0,13.0), (1.
 
   * [`Bag`](../../specification/#bag-accumulate-values-for-scatter-plots) and [`Sample`](../..//specification/#sample-reservoir-sampling): collect data points, rather than aggregate quantities.
 
+
+
+
+
+from histogrammar import *
+histogram2 = Bin(91, 1.0, 93.0, lambda event: event.met.pt)
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 1000: break
+    histogram2.fill(event)
+
+roothist2 = histogram.TH1F("name2", "title")
+roothist2.Draw()
+
+from histogrammar import *
+histogram = SparselyBin(1, lambda event: event.met.pt)
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 1000: break
+    histogram.fill(event)
+
+roothist = histogram.TH1F("name", "title")
+roothist.Draw()
+
+from histogrammar import *
+import math
+pt_vs_phi = Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 100000: break
+    pt_vs_phi.fill(event)
+
+roothist = pt_vs_phi.TProfile("name", "title")
+roothist.Draw()
+
+from histogrammar import *
+import math
+pt_vs_phi = Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 100000: break
+    pt_vs_phi.fill(event)
+
+roothist = pt_vs_phi.TProfile("name", "title")
+roothist.Draw()
+
+from histogrammar import *
+import math
+pt_vs_phi = SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 100000: break
+    pt_vs_phi.fill(event)
+
+roothist = pt_vs_phi.TProfile("name", "title")
+roothist.Draw()
+
+from histogrammar import *
+import math
+pt_vs_phi = SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 100000: break
+    pt_vs_phi.fill(event)
+
+roothist = pt_vs_phi.TProfile("name", "title")
+roothist.Draw()
+
+
+
+
+
 -->
