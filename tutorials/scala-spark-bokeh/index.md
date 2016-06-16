@@ -27,7 +27,7 @@ spark-shell --jars=`ls target/**/*.jar | tr '\n' ','`
 This tutorial also uses the [CMS public dataset](scala-cmsdata) as sample data. Load the code on that page to get an `events` iterator, then do:
 
 ```scala
-val rdd = sc.parallelize(events)
+val dataset_rdd = sc.parallelize(events)
 ```
 
 to turn it into a Spark RDD. It may take about 20 seconds to transfer all the data to your Spark cluster.
@@ -41,47 +41,17 @@ import org.dianahep.histogrammar._
 import org.dianahep.histogrammar.bokeh._
 ```
 
-Explore the file `data/triggerIsoMu24_50fb-1.json` used for the test:
-
-```bash
-{"photons": [], "MET": {"px": -20.33991813659668, "py": -31.165260314941406}, "electrons": [], "jets": [], "muons": [{"E": 46.11058044433594, "pz": 38.082550048828125, "px": 21.024599075317383, "py": 15.292481422424316, "q": 1, "iso": 0.0}], "numPrimaryVertices": 3}
-```
-
-In this example, let us produce a plot of muon momentum. Thus, the only variables we are going to need are:
-
-```bash
-"muons": [{"pz": 38.082550048828125, "px": 21.024599075317383, "py": 15.292481422424316}]
-```
-
-Define JSON schema to read only that subset of rows on demand (more advanced approaches use `Avro` or `Parquet`):
-```scala
-val jsonSchema = sqlContext.read.json(sc.parallelize(Array("""{"muons": [{"pz": 38.082550048828125, "px": 21.024599075317383, "py": 15.292481422424316}]}""")))
-```
- 
-Next, define case classes which would allow casting these data to the desired type:
+In this example, we plot muon quantities, so extract the muons to their own RDD:
 
 ```scala
-case class Mu(px: Double, py: Double, pz: Double)
-case class MuWrapper(muons: Array[Mu])
-```
-
-Now map the input data to your case classes and load it into Spark's Dataset.  Columns are automatically lined up by name, and the types are preserved:
-
-```scala
-import sqlContext.implicits._
-val dataset = sqlContext.read.format("json").schema(jsonSchema.schema).load("file:///.../histogrammar-docs/data/triggerIsoMu24_50fb-1.json").as[MuWrapper].cache()
-```
-
-In this example, data is first flattened using a `flatMap` transformation and then a set of selection requirements is applied using a `filter` action with a predicate:
-```scala
-val data_rdd = dataset.flatMap(muon => muon.muons).filter(muon => (muon.pz > 2.0)).rdd
+val muons_rdd = dataset_rdd.flatMap(_.muons).filter(_.pz > 2.0)
 ```
 
 After data extraction and transformation is completed, the histogram is booked and filled:
 
 ```scala
-val p_histogram = Histogram(100, 0, 200, {mu: Mu => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
-val final_histogram = data_rdd.aggregate(p_histogram)(new Increment, new Combine)
+val p_histogram = Histogram(100, 0, 200, {mu: Muon => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
+val final_histogram = muons_rdd.aggregate(p_histogram)(new Increment, new Combine)
 ```
 
 Users are strongly encouraged to learn the syntax of `Bokeh` package, especially about `Glyph` and `Plot` abstractions. Plotting a one dimensional histogram can be done in two simple lines of code:
@@ -113,19 +83,14 @@ for each of the histograms, and then use `plot()` method passing all of the glyp
 ```scala
 import io.continuum.bokeh._
 
-val data_rdd1 = dataset.flatMap(muon => muon.muons).filter(muon => (muon.pz > 2.0)).rdd
-val data_rdd2 = dataset.flatMap(muon => muon.muons).filter(muon => (muon.pz > 20.0)).rdd
+val p_histogram1 = muons_rdd.aggregate(Histogram(100, 0, 200, {mu: Muon => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)}, {mu: Muon => mu.pz > 2.0}))(new Increment, new Combine)
 
-val p_histogram1 = Histogram(100, 0, 200, {mu: Mu => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
-val p_histogram2 = Histogram(100, 0, 200, {mu: Mu => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
+val p_histogram2 = muons_rdd.aggregate(Histogram(100, 0, 200, {mu: Muon => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)}, {mu: Muon => mu.pz > 20.0}))(new Increment, new Combine)
 
-val selection1= data_rdd1.aggregate(p_histogram1)(new Increment, new Combine)
-val selection2= data_rdd2.aggregate(p_histogram2)(new Increment, new Combine)
+val G1 = p_histogram1.bokeh()
+val G2 = p_histogram2.bokeh(glyphType="circle",glyphSize=3,fillColor=Color.Blue)
 
-val G1 = selection1.bokeh()
-val G2 = selection2.bokeh(glyphType="circle",glyphSize=3,fillColor=Color.Blue)
-
-plot(G1,G2)
+val mythirdplot = plot(G1,G2)
 save(mythirdplot,"mythirdplot.html")
 ```
 
@@ -140,8 +105,8 @@ also allows to configure axes titles.
 Having a `GlyphRenderer` (a type of object returned by the `bokeh()` method) and a `Plot` (a type of object returned by the `plot()` method) objects one can easily put a `Legend` onto the plot using built-in `Bokeh` tools. For instance, given the histograms from the previous example:
 
 ```
-val G1 = selection1.bokeh()
-val G2 = selection2.bokeh(glyphType="circle",glyphSize=3,fillColor=Color.Blue)
+val G1 = p_histogram1.bokeh()
+val G2 = p_histogram2.bokeh(glyphType="circle",glyphSize=3,fillColor=Color.Blue)
 val legend = List("curve1" -> List(G1),"curve2" -> List(G2))
 
 val plots = plot(G1,G2)
@@ -154,7 +119,6 @@ save(plots,"mythirdplot_legend.html")
 
 Same API can be used to plot sparsely binned histograms. 
 
-
 ## Stack
 
 ### Example: plotting a stack of histograms
@@ -162,38 +126,17 @@ Same API can be used to plot sparsely binned histograms.
 Here is an example of how to make a stacked plot of two histograms. The most common use case in particle physics is to plot various simulated samples for the same final state. Here, a somewhat artificial case is considered when muon and jet momenta from the same sample are considered:
 
 ```scala
-import org.dianahep.histogrammar._
-import org.dianahep.histogrammar.bokeh._
-
-val jetSchema = sqlContext.read.json(sc.parallelize(Array("""{"jets":[{"pz": 42.1006965637207, "px": -13.06346321105957, "py": 32.3252067565918}]}""")))
-
-val muonSchema = sqlContext.read.json(sc.parallelize(Array("""{"muons": [{"pz": 38.082550048828125, "px": 21.024599075317383, "py": 15.292481422424316}]}""")))
-
-case class Mu(px: Double, py: Double, pz: Double)
-case class MuWrapper(muons: Array[Mu])
-case class Jet(px: Double, py: Double, pz: Double)
-case class JetWrapper(jets: Array[Jet])
-
-import sqlContext.implicits._
-val dataset1 = sqlContext.read.format("json").schema(muonSchema.schema).load("file:///.../histogrammar-docs/data/triggerIsoMu24_50fb-1.json").as[MuWrapper].cache()
-
-val dataset2 = sqlContext.read.format("json").schema(jetSchema.schema).load("file:///.../histogrammar-docs/data/triggerIsoMu24_50fb-1.json").as[JetWrapper].cache()
-
-import io.continuum.bokeh._
-val data_rdd1 = dataset1.flatMap(muon => muon.muons).filter(muon => (muon.pz > 2.0)).rdd
-val data_rdd2 = dataset2.flatMap(jet => jet.jets).filter(jet => (jet.pz > 3.0)).rdd
+val jets_rdd = dataset_rdd.flatMap(_.jets).filter(_.pz > 3.0)
 ```
 
 When booking the histograms, make sure the binning of the histograms to be stacked is the same, otherwise an exception will be thrown:
 
 ```scala
-val p_histogram1 = Histogram(100, 0, 200, {mu: Mu => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
-val p_histogram2 = Histogram(100, 0, 200, {jet: Jet => math.sqrt(jet.px*jet.px + jet.py*jet.py + jet.pz*jet.pz)})
+val p_histogram1 = muons_rdd.aggregate(Histogram(100, 0, 200, {mu: Muon => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)}))(new Increment, new Combine)
 
-val sample1 = data_rdd1.aggregate(p_histogram1)(new Increment, new Combine)
-val sample2 = data_rdd2.aggregate(p_histogram2)(new Increment, new Combine)
+val p_histogram2 = jets_rdd.aggregate(Histogram(100, 0, 200, {jet: Jet => math.sqrt(jet.px*jet.px + jet.py*jet.py + jet.pz*jet.pz)}))(new Increment, new Combine)
 
-val s = Stack.build(sample1,sample2)
-val mystackplot = s.bokeh().plot()
+val s = Stack.build(p_histogram1,p_histogram2)
+val mystackplot = plot(s.bokeh(): _*)
 save(mystackplot,"stackplot.html")
 ```
