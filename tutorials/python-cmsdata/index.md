@@ -12,11 +12,14 @@ For convenience, it has been converted to compressed JSON. The code that reads i
 
 ## Loading the data
 
-Start a Python prompt and copy the code below into your terminal.
+Start a Python prompt and _either_
 
-If all goes well, you'll have a generator named `events` that pulls data from the web as needed. You get an event by repeatedly calling `events.next()` (`events.__next__()` in Python 3) or by using it in a for loop. To restart the iterator from the beginning, re-run the last line to create a new `events` object.
+  * copy-paste the code into your terminal (I've had some trouble with pasting from the web into Python), _or_
+  * download the raw code and type `exec(open("/path/to/python-cmsdata.py").read())` to load it.
 
-The code to copy-paste ([link to raw code](../data/python-cmsdata.py)):
+If all goes well, you'll have a generator named `events` that pulls data from the web as needed. You get an event by repeatedly calling `events.next()` (Python 2) or `events.__next__()` (Python 3) or by using it in a for loop. To restart the iterator from the beginning, do `events = EventIterator()`.
+
+The code to copy-paste is below and the ([link to raw code is here](../../data/python-cmsdata.py)).
 
 ```python
 import json
@@ -161,7 +164,7 @@ class Event(object):
                      params["numPrimaryVertices"])
 
 # event data iterator
-def EventIterator(location):
+def EventIterator(location="http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz"):
     READ_BLOCK_SIZE = 1024*8
     webreader = urllib2.urlopen(location)
     gzipUnzipper = zlib.decompressobj(16 + zlib.MAX_WBITS)
@@ -183,5 +186,5 @@ def EventIterator(location):
                                if line != b""]
         yield eventsBatch.pop()
 
-events = EventIterator("http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 ```
