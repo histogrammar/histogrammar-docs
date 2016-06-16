@@ -2304,78 +2304,117 @@ def unweighted(datum):
 ```python
 def Histogram(num, low, high, quantity, selection=unweighted):
     return Select.ing(selection, Bin.ing(num, low, high, quantity,
-      Count.ing(), Count.ing(), Count.ing(), Count.ing()))
+        Count.ing(), Count.ing(), Count.ing(), Count.ing()))
 ```
 
-TODO: define all of the following.
+  * `num` (32-bit integer) is the number of bins; must be at least one.
+  * `low` (double) is the minimum-value edge of the first bin.
+  * `high` (double) is the maximum-value edge of the last bin; must be strictly greater than `low`.
+  * `quantity` (function returning double) computes the quantity to bin from the data.
+  * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
+
+## SparselyHistogram
 
 ```python
-def Histogram[DATUM]
-  (num: Int,
-  low: Double,
-  high: Double,
-  quantity: UserFcn[DATUM, Double],
-  selection: UserFcn[DATUM, Double] = unweighted[DATUM]) =
-  Select(selection, Bin(num, low, high, quantity))
-
-def SparselyHistogram[DATUM]
-  (binWidth: Double,
-  quantity: UserFcn[DATUM, Double],
-  selection: UserFcn[DATUM, Double] = unweighted[DATUM],
-  origin: Double = 0.0) =
-  Select(selection, SparselyBin(binWidth, quantity, origin = origin))
-
-def Profile[DATUM]
-  (num: Int,
-  low: Double,
-  high: Double,
-  binnedQuantity: UserFcn[DATUM, Double],
-  averagedQuantity: UserFcn[DATUM, Double],
-  selection: UserFcn[DATUM, Double] = unweighted[DATUM]) =
-  Select(selection, Bin(num, low, high, binnedQuantity, Average(averagedQuantity)))
-
-def SparselyProfile[DATUM]
-  (binWidth: Double,
-  binnedQuantity: UserFcn[DATUM, Double],
-  averagedQuantity: UserFcn[DATUM, Double],
-  selection: UserFcn[DATUM, Double] = unweighted[DATUM]) =
-  Select(selection, SparselyBin(binWidth, binnedQuantity, Average(averagedQuantity)))
-
-def ProfileErr[DATUM]
-  (num: Int,
-  low: Double,
-  high: Double,
-  binnedQuantity: UserFcn[DATUM, Double],
-  averagedQuantity: UserFcn[DATUM, Double],
-  selection: UserFcn[DATUM, Double] = unweighted[DATUM]) =
-  Select(selection, Bin(num, low, high, binnedQuantity, Deviate(averagedQuantity)))
-
-def SparselyProfileErr[DATUM]
-  (binWidth: Double,
-  binnedQuantity: UserFcn[DATUM, Double],
-  averagedQuantity: UserFcn[DATUM, Double],
-  selection: UserFcn[DATUM, Double] = unweighted[DATUM]) =
-  Select(selection, SparselyBin(binWidth, binnedQuantity, Deviate(averagedQuantity)))
-
-def TwoDimensionallyHistogram[DATUM]
-  (xnum: Int,
-   xlow: Double,
-   xhigh: Double,
-   xquantity: UserFcn[DATUM, Double],
-   ynum: Int,
-   ylow: Double,
-   yhigh: Double,
-   yquantity: UserFcn[DATUM, Double],
-   selection: UserFcn[DATUM, Double] = unweighted[DATUM]) =
-  Select(selection, Bin(xnum, xlow, xhigh, xquantity, Bin(ynum, ylow, yhigh, yquantity)))
-
-def TwoDimensionallySparselyHistogram[DATUM]
-  (xbinWidth: Double,
-   xquantity: UserFcn[DATUM, Double],
-   ybinWidth: Double,
-   yquantity: UserFcn[DATUM, Double],
-   selection: UserFcn[DATUM, Double] = unweighted[DATUM],
-   xorigin: Double = 0.0,
-   yorigin: Double = 0.0) =
-  Select(selection, SparselyBin(xbinWidth, xquantity, SparselyBin(ybinWidth, yquantity, origin = yorigin), origin = xorigin))
+def SparselyHistogram(binWidth, quantity, selection=unweighted, origin=0.0):
+    return Select.ing(selection, SparselyBin.ing(binWidth, quantity, Count.ing(), Count.ing(), origin))
 ```
+
+  * `binWidth` (double) is the width of a bin; must be strictly greater than zero.
+  * `quantity` (function returning double) computes the quantity to bin from the data.
+  * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
+  * `origin` (double) is the left edge of the bin whose index is 0.
+
+## Profile
+
+```python
+def Profile(num, low, high, binnedQuantity, averagedQuantity, selection=unweighted):
+    return Select.ing(selection, Bin.ing(num, low, high, binnedQuantity, Average.ing(averagedQuantity)))
+```
+
+  * `num` (32-bit integer) is the number of bins; must be at least one.
+  * `low` (double) is the minimum-value edge of the first bin.
+  * `high` (double) is the maximum-value edge of the last bin; must be strictly greater than `low`.
+  * `binnedQuantity` (function returning double) computes the quantity to bin from the data.
+  * `averagedQuantity` (function returning double) computes the quantity to average from the data.
+  * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
+
+## SparselyProfile
+
+```python
+def SparselyProfile(binWidth, binnedQuantity, averagedQuantity, selection=unweighted, origin=0.0):
+    return Select.ing(selection, SparselyBin.ing(binWidth, binnedQuantity, Average.ing(averagedQuantity), Count.ing(), origin))
+```
+
+  * `binWidth` (double) is the width of a bin; must be strictly greater than zero.
+  * `binnedQuantity` (function returning double) computes the quantity to bin from the data.
+  * `averagedQuantity` (function returning double) computes the quantity to average from the data.
+  * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
+  * `origin` (double) is the left edge of the bin whose index is 0.
+
+## ProfileErr
+
+```python
+def ProfileErr(num, low, high, binnedQuantity, averagedQuantity, selection=unweighted):
+    return Select.ing(selection, Bin.ing(num, low, high, binnedQuantity, Deviate.ing(averagedQuantity)))
+```
+
+  * `num` (32-bit integer) is the number of bins; must be at least one.
+  * `low` (double) is the minimum-value edge of the first bin.
+  * `high` (double) is the maximum-value edge of the last bin; must be strictly greater than `low`.
+  * `binnedQuantity` (function returning double) computes the quantity to bin from the data.
+  * `averagedQuantity` (function returning double) computes the quantity to average from the data.
+  * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
+
+## SparselyProfileErr
+
+```python
+def SparselyProfileErr(binWidth, binnedQuantity, averagedQuantity, selection=unweighted, origin=0.0):
+    return Select.ing(selection, SparselyBin.ing(binWidth, binnedQuantity, Deviate.ing(averagedQuantity), Count.ing(), origin))
+```
+
+  * `binWidth` (double) is the width of a bin; must be strictly greater than zero.
+  * `binnedQuantity` (function returning double) computes the quantity to bin from the data.
+  * `averagedQuantity` (function returning double) computes the quantity to average from the data.
+  * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
+  * `origin` (double) is the left edge of the bin whose index is 0.
+
+## TwoDimensionallyHistogram
+
+```python
+def TwoDimensionallyHistogram(xnum, xlow, xhigh, xquantity,
+                              ynum, ylow, yhigh, yquantity,
+                              selection=unweighted):
+  return Select.ing(selection, Bin.ing(xnum, xlow, xhigh, xquantity, Bin.ing(ynum, ylow, yhigh, yquantity)))
+```
+
+  * `xnum` (32-bit integer) is the number of bins along the x-axis; must be at least one.
+  * `xlow` (double) is the minimum-value edge of the first x-axis bin.
+  * `xhigh` (double) is the maximum-value edge of the last x-axis bin; must be strictly greater than `xlow`.
+  * `xquantity` (function returning double) computes the quantity to bin along the x-axis from the data.
+  * `ynum` (32-bit integer) is the number of bins along the y-axis; must be at least one.
+  * `ylow` (double) is the minimum-value edge of the first y-axis bin.
+  * `yhigh` (double) is the maximum-value edge of the last y-axis bin; must be strictly greater than `ylow`.
+  * `yquantity` (function returning double) computes the quantity to bin along the y-axis from the data.
+  * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
+
+## TwoDimensionallySparselyHistogram
+
+```python
+def TwoDimensionallySparselyHistogram(xbinWidth, xquantity,
+                                      ybinWidth, yquantity,
+                                      selection=unweighted,
+                                      xorigin=0.0, yorigin=0.0):
+    return Select.ing(selection,
+        SparselyBin.ing(xbinWidth, xquantity,
+            SparselyBin.ing(ybinWidth, yquantity,
+                Count.ing(), Count.ing(), yorigin), Count.ing(), xorigin))
+```
+
+  * `xbinWidth` (double) is the width of a bin along the x-axis; must be strictly greater than zero.
+  * `xquantity` (function returning double) computes the quantity to bin along the x-axis from the data.
+  * `ybinWidth` (double) is the width of a bin along the y-axis; must be strictly greater than zero.
+  * `yquantity` (function returning double) computes the quantity to bin along the y-axis from the data.
+  * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
+  * `xorigin` (double) is the left edge of the bin on the x-axis whose index is 0.
+  * `yorigin` (double) is the left edge of the bin on the y-axis whose index is 0.
