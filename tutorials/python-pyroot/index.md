@@ -664,17 +664,19 @@ List((0.0,16.0), (1.0,12.0), (1.0,11.0), (1.0,12.0), (1.0,12.0), (1.0,13.0), (1.
 
 
 from histogrammar import *
-histogram2 = Bin(91, 1.0, 93.0, lambda event: event.met.pt)
+histogram2 = Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt))
+histogram2 = Histogram(91, 1.0, 93.0, lambda event: event.met.pt)
 events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
 for i, event in enumerate(events):
     if i == 1000: break
     histogram2.fill(event)
 
-roothist2 = histogram.TH1F("name2", "title")
+roothist2 = histogram2.TH1F("name2", "title")
 roothist2.Draw()
 
 from histogrammar import *
-histogram = SparselyBin(1, lambda event: event.met.pt)
+histogram = Select(unweighted, SparselyBin(1, lambda event: event.met.pt))
+histogram = SparselyHistogram(1, lambda event: event.met.pt)
 events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
 for i, event in enumerate(events):
     if i == 1000: break
@@ -685,7 +687,8 @@ roothist.Draw()
 
 from histogrammar import *
 import math
-pt_vs_phi = Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt))
+pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt)))
+pt_vs_phi = Profile(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
 events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
 for i, event in enumerate(events):
     if i == 100000: break
@@ -696,7 +699,8 @@ roothist.Draw()
 
 from histogrammar import *
 import math
-pt_vs_phi = Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt))
+pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt)))
+pt_vs_phi = Profile(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
 events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
 for i, event in enumerate(events):
     if i == 100000: break
@@ -707,10 +711,11 @@ roothist.Draw()
 
 from histogrammar import *
 import math
-pt_vs_phi = SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt))
+pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt)))
+pt_vs_phi = SparselyProfile(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
 events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
 for i, event in enumerate(events):
-    if i == 100000: break
+    if i == 1000: break
     pt_vs_phi.fill(event)
 
 roothist = pt_vs_phi.TProfile("name", "title")
@@ -718,14 +723,51 @@ roothist.Draw()
 
 from histogrammar import *
 import math
-pt_vs_phi = SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt))
+pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt)))
+pt_vs_phi = SparselyProfileErr(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 1000: break
+    pt_vs_phi.fill(event)
+
+roothist = pt_vs_phi.TProfile("name", "title")
+roothist.Draw()
+
+from histogrammar import *
+import math
+pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Bin(20, 0, 100, lambda event: event.met.pt)))
+pt_vs_phi = TwoDimensionallyHistogram(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), 20, 0, 100, lambda event: event.met.pt)
 events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
 for i, event in enumerate(events):
     if i == 100000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.TProfile("name", "title")
-roothist.Draw()
+roothist = pt_vs_phi.TH2F("name", "title")
+roothist.Draw("colz")
+
+from histogrammar import *
+import math
+pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), SparselyBin(5.0, lambda event: event.met.pt)))
+pt_vs_phi = TwoDimensionallySparselyHistogram(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), 5.0, lambda event: event.met.pt)
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 1000: break
+    pt_vs_phi.fill(event)
+
+roothist = pt_vs_phi.TH2F("name", "title")
+roothist.Draw("colz")
+
+from histogrammar import *
+import math
+hist = Select(unweighted, SparselyBin(5, lambda event: event.met.px, SparselyBin(5, lambda event: event.met.py)))
+hist = TwoDimensionallySparselyHistogram(5, lambda event: event.met.px, 5, lambda event: event.met.py)
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 1000: break
+    hist.fill(event)
+
+roothist = hist.TH2F("name", "title")
+roothist.Draw("colz")
 
 
 
