@@ -47,3 +47,7 @@ Other pages refer back to these for set-up that would otherwise have to be repea
 
   * {% include progress.html complete=0 %} [Enhancements for Numpy](python-numpy): Aggregating over data in Numpy arrays without a Python for loop (i.e. faster).
 
+## End-to-end workflows
+
+  * {% include progress.html complete=100 %} [Spark data to Bokeh plots in Scala](scala-spark-bokeh)
+

@@ -28,8 +28,6 @@ If all goes well, you'll have an iterator named `events` that pulls data from th
 The code to copy-paste is below and the [link to raw code is here](../../data/scala-cmsdata.scala).
 
 ```scala
-import org.dianahep.histogrammar.json._
-
 // class definitions
 
 trait LorentzVector {
@@ -76,65 +74,10 @@ case class MET(px: Double, py: Double) {
 
 case class Event(jets: Seq[Jet], muons: Seq[Muon], electrons: Seq[Electron], photons: Seq[Photon], met: MET, numPrimaryVertices: Long)
 
-// functions for reading from JSON, each packaged up in a namespace
-object Jet {
-  def fromJson(params: Map[String, JsonNumber]) =
-    Jet(params("px").toDouble,
-        params("py").toDouble,
-        params("pz").toDouble,
-        params("E").toDouble,
-        params("btag").toDouble)
-}
-object Muon {
-  def fromJson(params: Map[String, JsonNumber]) =
-    Muon(params("px").toDouble,
-         params("py").toDouble,
-         params("pz").toDouble,
-         params("E").toDouble,
-         params("q").toInt,
-         params("iso").toDouble)
-}
-object Electron {
-  def fromJson(params: Map[String, JsonNumber]) =
-    Electron(params("px").toDouble,
-             params("py").toDouble,
-             params("pz").toDouble,
-             params("E").toDouble,
-             params("q").toInt,
-             params("iso").toDouble)
-}
-object Photon {
-  def fromJson(params: Map[String, JsonNumber]) =
-    Photon(params("px").toDouble,
-           params("py").toDouble,
-           params("pz").toDouble,
-           params("E").toDouble,
-           params("iso").toDouble)
-}
-object MET {
-  def fromJson(params: Map[String, JsonNumber]): MET =
-    MET(params("px").toDouble, params("py").toDouble)
-}
-object Event {
-  def fromJson(params: JsonObject) = {
-    val JsonArray(jets @ _*) = params("jets")
-    val JsonArray(muons @ _*) = params("muons")
-    val JsonArray(electrons @ _*) = params("electrons")
-    val JsonArray(photons @ _*) = params("photons")
-    val met = params("MET").asInstanceOf[JsonObject]
-    val JsonInt(numPrimaryVertices) = params("numPrimaryVertices")
-    Event(
-      jets collect {case j: JsonObject => Jet.fromJson(j.to[JsonNumber].toMap)},
-      muons collect {case j: JsonObject => Muon.fromJson(j.to[JsonNumber].toMap)},
-      electrons collect {case j: JsonObject => Electron.fromJson(j.to[JsonNumber].toMap)},
-      photons collect {case j: JsonObject => Photon.fromJson(j.to[JsonNumber].toMap)},
-      MET.fromJson(met.to[JsonNumber].toMap),
-      numPrimaryVertices)
-  }
-}
-
 // event data iterator
 case class EventIterator(location: String = "http://histogrammar.org/docs/data/triggerIsoMu24_50fb-1.json.gz") extends Iterator[Event] {
+  import org.dianahep.histogrammar.json._
+
   // use Java libraries to stream and decompress data on-the-fly
   val scanner = new java.util.Scanner(
     new java.util.zip.GZIPInputStream(
@@ -144,7 +87,7 @@ case class EventIterator(location: String = "http://histogrammar.org/docs/data/t
   private def getNext() =
     try {
       Json.parse(scanner.nextLine) collect {
-        case event: JsonObject => Event.fromJson(event)
+        case event: JsonObject => eventFromJson(event)
       }
     }
     catch {
@@ -159,6 +102,55 @@ case class EventIterator(location: String = "http://histogrammar.org/docs/data/t
     val out = theNext.get
     theNext = getNext()
     out
+  }
+
+  def jetFromJson(params: Map[String, JsonNumber]) =
+    new Jet(params("px").toDouble,
+            params("py").toDouble,
+            params("pz").toDouble,
+            params("E").toDouble,
+            params("btag").toDouble)
+
+  def muonFromJson(params: Map[String, JsonNumber]) =
+    new Muon(params("px").toDouble,
+             params("py").toDouble,
+             params("pz").toDouble,
+             params("E").toDouble,
+             params("q").toInt,
+             params("iso").toDouble)
+
+  def electronFromJson(params: Map[String, JsonNumber]) =
+    new Electron(params("px").toDouble,
+                 params("py").toDouble,
+                 params("pz").toDouble,
+                 params("E").toDouble,
+                 params("q").toInt,
+                 params("iso").toDouble)
+
+  def photonFromJson(params: Map[String, JsonNumber]) =
+    new Photon(params("px").toDouble,
+               params("py").toDouble,
+               params("pz").toDouble,
+               params("E").toDouble,
+               params("iso").toDouble)
+
+  def metFromJson(params: Map[String, JsonNumber]): MET =
+    new MET(params("px").toDouble, params("py").toDouble)
+
+  def eventFromJson(params: JsonObject) = {
+    val JsonArray(jets @ _*) = params("jets")
+    val JsonArray(muons @ _*) = params("muons")
+    val JsonArray(electrons @ _*) = params("electrons")
+    val JsonArray(photons @ _*) = params("photons")
+    val met = params("MET").asInstanceOf[JsonObject]
+    val JsonInt(numPrimaryVertices) = params("numPrimaryVertices")
+    new Event(
+      jets collect {case j: JsonObject => jetFromJson(j.to[JsonNumber].toMap)},
+      muons collect {case j: JsonObject => muonFromJson(j.to[JsonNumber].toMap)},
+      electrons collect {case j: JsonObject => electronFromJson(j.to[JsonNumber].toMap)},
+      photons collect {case j: JsonObject => photonFromJson(j.to[JsonNumber].toMap)},
+      metFromJson(met.to[JsonNumber].toMap),
+      numPrimaryVertices)
   }
 }
 

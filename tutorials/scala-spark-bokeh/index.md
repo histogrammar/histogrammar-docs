@@ -3,14 +3,34 @@ title: Drawing plots in Scala with Bokeh
 type: default
 toc: false
 summary: |
-    <p>If you're working with Histogrammar in Scala and want to use <a href="https://github.com/bokeh/bokeh-scala">Bokeh</a> to draw plots, read this page.</p>
+    <p>If you're working with <a href="http://spark.apache.org/">Apache Spark</a> in Scala and want to use <a href="https://github.com/bokeh/bokeh-scala">Bokeh</a> to draw plots, read this page.</p>
 ---
 
 ## Setting up
 
 The examples on this page have been tested with Histogrammar 0.7. Any subsequent version should work. See the [Installation instructions](../install) if you need to install it.
 
-It also uses the [CMS public dataset](scala-cmsdata) as sample data.
+It also uses Apache Spark, so you'll want to start a Spark Shell with the following JARs loaded:
+
+  * histogrammar-0.7.jar
+  * histogrammar-bokeh-0.7.jar
+  * Bokeh and all of its dependencies.
+
+If you have compiled from source and are in the `histogrammar/scala-bokeh` directory, a convenient way to get a `--jars` argument for Spark is with the following:
+
+```bash
+spark-shell --jars=`ls target/**/*.jar | tr '\n' ','`
+```
+
+(lists all JARs, concatenates them with commas, and passes to Spark). Use whatever other options are necessary for your Spark installation, such as a custom `--master`.
+
+This tutorial also uses the [CMS public dataset](scala-cmsdata) as sample data. Load the code on that page to get an `events` iterator, then do:
+
+```scala
+val rdd = sc.parallelize(events)
+```
+
+to turn it into a Spark RDD. It may take about 20 seconds to transfer all the data to your Spark cluster.
 
 ## Plotting a Histogram
 
@@ -88,7 +108,8 @@ save(mysecondplot,"mysecondplot.html")
 ### Example: superimposing multiple histograms on one plot
 
 To superimpose two or more histograms on a single `Bokeh` plot one can simply create and customize glyphs
-for each of the histograms, and then use `plot()` method passing all of the glyphs as arguments like: 
+for each of the histograms, and then use `plot()` method passing all of the glyphs as arguments like:
+
 ```scala
 import io.continuum.bokeh._
 
