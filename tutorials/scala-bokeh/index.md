@@ -95,11 +95,11 @@ import io.continuum.bokeh._
 val data_rdd1 = dataset.flatMap(muon => muon.muons).filter(muon => (muon.pz > 2.0)).rdd
 val data_rdd2 = dataset.flatMap(muon => muon.muons).filter(muon => (muon.pz > 20.0)).rdd
 
-val pt_histogram1 = Histogram(100, 0, 200, {mu: Mu => mu.pt})
-val pt_histogram2 = Histogram(100, 0, 200, {mu: Mu => mu.pt})
+val p_histogram1 = Histogram(100, 0, 200, {mu: Mu => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
+val p_histogram2 = Histogram(100, 0, 200, {mu: Mu => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
 
-val selection1= data_rdd1.aggregate(pt_histogram1)(new Increment, new Combine)
-val selection2= data_rdd2.aggregate(pt_histogram2)(new Increment, new Combine)
+val selection1= data_rdd1.aggregate(p_histogram1)(new Increment, new Combine)
+val selection2= data_rdd2.aggregate(p_histogram2)(new Increment, new Combine)
 
 val G1 = selection1.bokeh()
 val G2 = selection2.bokeh(glyphType="circle",glyphSize=3,fillColor=Color.Blue)
@@ -138,28 +138,39 @@ Same API can be used to plot sparsely binned histograms.
 
 ### Example: plotting a stack of histograms
 
-Here is an example of how to make a stacked plot of two histograms:
+Here is an example of how to make a stacked plot of two histograms. The most common use case in particle physics is to plot various simulated samples for the same final state. Here, a somewhat artificial case is considered when muon and jet momenta from the same sample are considered:
 
 ```scala
 import org.dianahep.histogrammar._
 import org.dianahep.histogrammar.bokeh._
 
-val jsonSchema = sqlContext.read.json(sc.parallelize(Array("""{"muons": [{"pz": 38.082550048828125, "px": 21.024599075317383, "py": 15.292481422424316}]}""")))
+val jetSchema = sqlContext.read.json(sc.parallelize(Array("""{"jets":[{"pz": 42.1006965637207, "px": -13.06346321105957, "py": 32.3252067565918}]}""")))
+
+val muonSchema = sqlContext.read.json(sc.parallelize(Array("""{"muons": [{"pz": 38.082550048828125, "px": 21.024599075317383, "py": 15.292481422424316}]}""")))
 
 case class Mu(px: Double, py: Double, pz: Double)
 case class MuWrapper(muons: Array[Mu])
+case class Jet(px: Double, py: Double, pz: Double)
+case class JetWrapper(jets: Array[Jet])
 
 import sqlContext.implicits._
-val dataset = sqlContext.read.format("json").schema(jsonSchema.schema).load("file:///.../histogrammar-docs/data/triggerIsoMu24_50fb-1.json").as[MuWrapper].cache()
+val dataset1 = sqlContext.read.format("json").schema(muonSchema.schema).load("file:///.../histogrammar-docs/data/triggerIsoMu24_50fb-1.json").as[MuWrapper].cache()
+
+val dataset2 = sqlContext.read.format("json").schema(jetSchema.schema).load("file:///.../histogrammar-docs/data/triggerIsoMu24_50fb-1.json").as[JetWrapper].cache()
 
 import io.continuum.bokeh._
-val data_rdd1 = dataset.flatMap(muon => muon.muons).filter(muon => (muon.pz > 2.0)).rdd
-val data_rdd2 = dataset.flatMap(muon => muon.muons).filter(muon => (muon.pz > 20.0)).rdd
+val data_rdd1 = dataset1.flatMap(muon => muon.muons).filter(muon => (muon.pz > 2.0)).rdd
+val data_rdd2 = dataset2.flatMap(jet => jet.jets).filter(jet => (jet.pz > 3.0)).rdd
+```
 
-val p_histogram = Histogram(100, 0, 200, {mu: Mu => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
+When booking the histograms, make sure the binning of the histograms to be stacked is the same, otherwise an exception will be thrown:
 
-val sample1 = data_rdd1.aggregate(p_histogram)(new Increment, new Combine)
-val sample2 = data_rdd2.aggregate(p_histogram)(new Increment, new Combine)
+```scala
+val p_histogram1 = Histogram(100, 0, 200, {mu: Mu => math.sqrt(mu.px*mu.px + mu.py*mu.py + mu.pz*mu.pz)})
+val p_histogram2 = Histogram(100, 0, 200, {jet: Jet => math.sqrt(jet.px*jet.px + jet.py*jet.py + jet.pz*jet.pz)})
+
+val sample1 = data_rdd1.aggregate(p_histogram1)(new Increment, new Combine)
+val sample2 = data_rdd2.aggregate(p_histogram2)(new Increment, new Combine)
 
 val s = Stack.build(sample1,sample2)
 val mystackplot = s.bokeh().plot()
