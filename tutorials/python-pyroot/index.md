@@ -671,7 +671,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     histogram2.fill(event)
 
-roothist2 = histogram2.TH1F("name2", "title")
+roothist2 = histogram2.root("name2", "title")
 roothist2.Draw()
 
 from histogrammar import *
@@ -682,7 +682,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     histogram.fill(event)
 
-roothist = histogram.TH1F("name", "title")
+roothist = histogram.root("name", "title")
 roothist.Draw()
 
 from histogrammar import *
@@ -694,7 +694,7 @@ for i, event in enumerate(events):
     if i == 100000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.TProfile("name", "title")
+roothist = pt_vs_phi.root("name", "title")
 roothist.Draw()
 
 from histogrammar import *
@@ -706,7 +706,7 @@ for i, event in enumerate(events):
     if i == 100000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.TProfile("name", "title")
+roothist = pt_vs_phi.root("name", "title")
 roothist.Draw()
 
 from histogrammar import *
@@ -718,7 +718,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.TProfile("name", "title")
+roothist = pt_vs_phi.root("name", "title")
 roothist.Draw()
 
 from histogrammar import *
@@ -730,7 +730,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.TProfile("name", "title")
+roothist = pt_vs_phi.root("name", "title")
 roothist.Draw()
 
 from histogrammar import *
@@ -742,7 +742,7 @@ for i, event in enumerate(events):
     if i == 100000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.TH2F("name", "title")
+roothist = pt_vs_phi.root("name", "title")
 roothist.Draw("colz")
 
 from histogrammar import *
@@ -754,7 +754,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.TH2F("name", "title")
+roothist = pt_vs_phi.root("name", "title")
 roothist.Draw("colz")
 
 from histogrammar import *
@@ -766,8 +766,84 @@ for i, event in enumerate(events):
     if i == 1000: break
     hist.fill(event)
 
-roothist = hist.TH2F("name", "title")
+roothist = hist.root("name", "title")
 roothist.Draw("colz")
+
+
+
+from histogrammar import *
+fraction = Fraction(lambda event: event.numPrimaryVertices > 5, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
+fraction = Fraction(lambda event: event.numPrimaryVertices > 5, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 10000: break
+    fraction.fill(event)
+
+roothist = fraction.root("x", "y")
+roothist.Draw()
+
+
+from histogrammar import *
+fraction = Fraction(lambda event: event.numPrimaryVertices > 5, SparselyBin(1, lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 10000: break
+    fraction.fill(event)
+
+roothist = fraction.root("x", "y")
+roothist.Draw()
+
+
+
+
+
+from histogrammar import *
+fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
+fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 10000: break
+    fraction.fill(event)
+
+roothist = fraction.root("one", "two", "three", "four", "five")
+roothist.Draw()
+
+from histogrammar import *
+fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, SparselyBin(1, lambda event: event.met.pt)))
+fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, SparselyHistogram(1, lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 10000: break
+    fraction.fill(event)
+
+roothist = fraction.root("one", "two", "three", "four", "five")
+roothist.Draw()
+
+
+
+from histogrammar import *
+fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
+fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 10000: break
+    fraction.fill(event)
+
+roothist = fraction.root("one", "two", "three", "four", "five")
+roothist.Draw()
+
+
+from histogrammar import *
+fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, SparselyBin(1, lambda event: event.met.pt)))
+fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, SparselyHistogram(1, lambda event: event.met.pt))
+events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+for i, event in enumerate(events):
+    if i == 10000: break
+    fraction.fill(event)
+
+roothist = fraction.root("one", "two", "three", "four", "five")
+roothist.Draw()
+
 
 
 

@@ -2299,7 +2299,7 @@ def unweighted(datum):
     return 1.0
 ```
 
-## **Histogram:** classic histogram
+## **Histogram**
 
 An interval is divided into bins and the number of entries (sum of weights) is counted in each bin. All plotting front-ends should be capable of displaying this.
 
@@ -2315,7 +2315,7 @@ def Histogram(num, low, high, quantity, selection=unweighted):
   * `quantity` (function returning double) computes the quantity to bin from the data.
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
 
-## **SparselyHistogram:** histogram with sparse bins
+## **SparselyHistogram**
 
 No memory is allocated for empty bins. This allows the analyst to plot a whole distribution without first knowing its support. (The analyst must have an appropriate choice of bin width, however.) Most plotting front-ends convert it into a dense representation immediately before plotting.
 
@@ -2332,11 +2332,11 @@ def SparselyHistogram(binWidth, quantity, selection=unweighted, origin=0.0):
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
   * `origin` (double) is the left edge of the bin whose index is 0.
 
-## **Profile:** project mean along axis
+## **Profile**
 
 Views a two-dimensional dataset as a function by binning along one axis and averaging the other.
 
-For a "profile plot" as defined in HBOOK, PAW, and ROOT, see [ProfileErr](#profileerr-project-mean-with-errors), which includes the variance in each bin to compute errors on the means.
+For a "profile plot" as defined in HBOOK, PAW, and ROOT, see [ProfileErr](#profileerr), which includes the variance in each bin to compute errors on the means.
 
 ```python
 def Profile(num, low, high, binnedQuantity, averagedQuantity, selection=unweighted):
@@ -2352,7 +2352,7 @@ def Profile(num, low, high, binnedQuantity, averagedQuantity, selection=unweight
   * `averagedQuantity` (function returning double) computes the quantity to average from the data.
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
 
-## **SparselyProfile:** project mean with sparse bins
+## **SparselyProfile**
 
 Views a two-dimensional dataset as a function by sparsely binning along one axis and averaging the other.
 
@@ -2369,7 +2369,7 @@ def SparselyProfile(binWidth, binnedQuantity, averagedQuantity, selection=unweig
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
   * `origin` (double) is the left edge of the bin whose index is 0.
 
-## **ProfileErr:** project mean with errors
+## **ProfileErr**
 
 Views a two-dimensional dataset as a function by binning along one axis and averaging the other, with variances to compute the error on the mean.
 
@@ -2387,7 +2387,7 @@ def ProfileErr(num, low, high, binnedQuantity, averagedQuantity, selection=unwei
   * `averagedQuantity` (function returning double) computes the quantity to average from the data.
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
 
-## **SparselyProfileErr:** project mean with errors and sparse bins
+## **SparselyProfileErr**
 
 Views a two-dimensional dataset as a function by sparsely binning along one axis and averaging the other, with variances to compute the error on the mean.
 
@@ -2404,7 +2404,7 @@ def SparselyProfileErr(binWidth, binnedQuantity, averagedQuantity, selection=unw
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
   * `origin` (double) is the left edge of the bin whose index is 0.
 
-## **TwoDimensionallyHistogram:** count entries in 2D bins
+## **TwoDimensionallyHistogram**
 
 Views a two-dimensional distribution in its entirety by counting the number of entries (sum of weights) in a grid of rectangular bins.
 
@@ -2427,7 +2427,7 @@ def TwoDimensionallyHistogram(xnum, xlow, xhigh, xquantity,
   * `yquantity` (function returning double) computes the quantity to bin along the y-axis from the data.
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
 
-## **TwoDimensionallySparselyHistogram:** count entries in 2D sparse bins
+## **TwoDimensionallySparselyHistogram**
 
 Views a two-dimensional distribution in its entirety by counting the number of entries (sum of weights) in a conceptual grid of rectangular bins; the bins are only filled if non-zero.
 
