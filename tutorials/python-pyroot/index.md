@@ -29,7 +29,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     histogram.fill(event)
 
-roothist = histogram.TH1F("name", "title")
+roothist = histogram.root("name", "title")
 roothist.Draw()
 ```
 
@@ -53,17 +53,19 @@ histogram = Bin(100, 0, 100, lambda event: event.met.pt)
 
 As a ROOT user, you are no doubt familiar with the concept of a histogram as an empty container that must be filled to be meaningful. However, the fill rule `lambda event: event.met.pt` may be unexpected.
 
-In a ROOT typical script, you would declare ("book") a suite of empty histograms in an initialization stage and then fill them in a loop over a zillion events. The physics-specific logic of what to put in each histogram can be far from the booking code.
+In a ROOT typical script, you would declare ("book") a suite of empty histograms in an initialization stage and then fill them in a loop over a zillion events. The physics-specific logic of what to put in each histogram can end up being far from the booking code.
 
-In Histogrammar, the rule for how to fill the histogram is provided in the constructor, so that the loop can be automated with no input from the data analyst. Although this is useful in itself for maintainability (it's easier to spot incongruities between the binning and the fill rule when they're right next to each other), it is also important for frameworks like Apache PySpark that distribute the fill operation. Without consolidating the fill logic like this, a PySpark `aggregate` call would be more complicated.
+In Histogrammar, the rule for how to fill the histogram is provided in the constructor, so that the loop can be automated with no input from the data analyst. Although this is useful in itself for maintainability (it's easier to spot incongruities between the binning and the fill rule when they're right next to each other), it is also important for frameworks like Apache PySpark that distribute the fill operation. Without consolidating the fill logic like this, a PySpark `aggregate` call would be very difficult to maintain.
 
 Finally, the last line
 
 ```python
-roothist = histogram.TH1F("name", "title")
+roothist = histogram.root("name", "title")
 ```
 
-creates a ROOT object from the Histogrammar object. You can style it and manipulate it as you ordinarily would, using ROOT functions. The intention of Histogrammar is not to replace ROOT or any other plotting framework, but to provide an alternate means of aggregation that cuts across frameworks and encourages sharing of data, using each tool for what it does best.
+creates a ROOT object from the Histogrammar object. In this case, it is a `ROOT.TH1D`, but the exact choice depends on what kind of Histogrammar object you're converting.
+
+You can style and manipulate this ROOT object as you ordinarily would, using ROOT functions. The intention of Histogrammar is not to replace ROOT or any other plotting framework, but to provide an alternate means of aggregation that cuts across frameworks and encourages sharing of data, using each tool for what it does best.
 
 ## Composability
 
@@ -74,9 +76,23 @@ In the above, it might seem that `Bin` is Histogrammar's word for "histogram," b
   * `overflow`: what to do with data above the high edge;
   * `nanflow`: what to do with data that is not a number (`NaN`).
 
-ROOT fills the value of each bin with a count of entries, and similarly for underflow and overflow. (Histogrammar includes a "nanflow" so that every input value fills _some_ bin.) Similarly, the default for each of these arguments in Histogrammar is `Count()`.
+ROOT would fill the value of each bin, as well as the underflow and overflow, with a count of entries. (Histogrammar additionally has a "nanflow" so that every input value fills _some_ bin.) This is the most common case, so Histogrammar has `Count()` as default values for these arguments.
 
-Histogrammar's `Count` is an aggregator of the same sort as `Bin`, and they can be used interchangeably. For instance, what would it mean for a binning's `value` to be another binning? It would be a two-dimensional histogram:
+Here, the similarity ends. Histogrammar's `Count` is an aggregator of the same sort as `Bin`, and they can be used interchangeably. You could have counted the data instead of binning it:
+
+```python
+count = Count()
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    count.fill(event)
+
+print(count)
+```
+
+produces `<Count 1000.0>`, though this is only useful if you didn't already know how many elements you were looping over.
+
+Let's try something more interesting: put a `Bin` of `Count` inside of a `Bin`.
 
 ```python
 hist2d = Bin(10, -100, 100, lambda event: event.met.px,
@@ -86,79 +102,149 @@ for i, event in enumerate(events):
     if i == 1000: break
     hist2d.fill(event)
 
-
+roothist = hist2d.root("name2", "title")
+roothist.Draw("colz")
 ```
 
+![Two-dimensional histogram](hist2d.png)
+
+A `Bin` of `Bin` of `Count` is a two dimensional histogram because the thing that we put inside each bin of the first histogram is another whole histogram. With just two primitives, we can express histograms of any dimension.
+
+It's hard to visualize histograms with more than two dimensions, but we can still aggregate them. This kind of data reduction can be useful for things other than plotting. ROOT can view histograms up to three dimensions, so we can try it:
+
+```python
+hist3d = Bin(10, -100, 100, lambda muon: muon.px,
+             Bin(10, -100, 100, lambda muon: muon.py,
+                 Bin(10, -100, 100, lambda muon: muon.pz)))
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    for muon in event.muons:
+        hist3d.fill(muon)
+
+roothist = hist3d.root("name3", "title")
+```
+
+In Histogrammar version 0.7, at least, this raises
+
+```
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'Bin' object has no attribute 'root'
+```
+
+meaning that Histogrammar does not have a known conversion from `Bin` of `Bin` of `Bin` of `Count` to a corresponding ROOT object. The types of histograms you can build with Histogrammar is literally infinite, but there is a finite set of patterns mapping Histogrammar objects onto objects in a given plotting library. The Histogrammar-ROOT front-end may someday handle three-dimensional histograms, but as of version 0.7 it does not.
+
+Nevertheless, the aggregated data is available inside `hist3d`. Explore it with Python's `dir()` or tab-completion and come up with creative ways to visualize it.
+
+```python
+import ROOT
+for i, x in enumerate(hist3d.values):
+    low, high = hist3d.range(i)
+    roothist = x.root("slice {}".format(i), "{} <= px < {}".format(low, high))
+    roothist.Draw("colz")
+    ROOT.gPad.SaveAs("slice_{}.png".format(i))
+
+import os
+os.system("convert -delay 100 -loop 0 slice*.png hist3d.gif")
+```
+
+![Three-dimensional histogram](hist3d.gif)
+
+This could be improved with better binning, better ROOT styling (such as a fixed `colz` scale), and animated GIF conversion (pause before repeating), but you get the idea.
+
+### Visual tour of Histogrammar primitives
+
+We managed to produce three different visualizations with only `Count` and `Bin`, but there are two dozen different kinds of primitives to work with. Let's try a few more.
+
+`Average` is a drop-in replacement for `Count` that averages a quantity instead of counting entries.
+
+```python
+average = Average(lambda event: event.met.pt)
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    average.fill(event)
+
+print(average)
+```
+
+prints `<Average mean=26.5509706109>`.
+
+If we bin it, we approximate a two-dimensional distribution as a function.
+
+
+```python
+pt_vs_vertices = Bin(20, 0.5, 20.5, lambda event: event.numPrimaryVertices,
+                     Average(lambda event: event.met.pt))
+
+events = EventIterator()
+for i, event in enumerate(events):
+    if i == 10000: break
+    pt_vs_vertices.fill(event)
+
+roothist = pt_vs_vertices.root("name4")
+roothist.GetXaxis().SetTitle("number of primary vertices")
+roothist.GetYaxis().SetTitle("average MET pT")
+roothist.Draw()
+```
+
+![Profile without error bars](profile.png)
+
+This is a profile plot (`roothist` is literally a `ROOT.TProfile`), which should be familiar to ROOT users. Profile plots usually have error bars, but the required information to make the error bar (variance in each bin) is not available because we only accumulated the averages.
+
+A primitive called `Deviate` accumulates mean and variance:
+
+```python
+deviate = Deviate(lambda event: event.met.pt)
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    deviate.fill(event)
+
+print(deviate)
+```
+
+prints `<Deviate mean=24.5114851815 variance=279.49272031>`. (Why the weird name? Every primitive in Histogrammar is a verb, and "variance" and "standard deviation" are nouns. Type-safe versions of Histogrammar&mdash; which does not include Python&mdash; use verb tenses to specify which stage of development the primitive is in. Python just uses duck typing.)
+
+All we have to do to get error bars is to swap `Average` for `Deviate`.
+
+```python
+pt_vs_vertices = Bin(20, 0.5, 20.5, lambda event: event.numPrimaryVertices,
+                     Deviate(lambda event: event.met.pt))
+
+events = EventIterator()
+for i, event in enumerate(events):
+    if i == 10000: break
+    pt_vs_vertices.fill(event)
+
+roothist = pt_vs_vertices.root("name5")
+roothist.GetXaxis().SetTitle("number of primary vertices")
+roothist.GetYaxis().SetTitle("average MET pT")
+roothist.Draw()
+```
+
+![Profile with error bars](profileerr.png)
+
+It may be useful to know that every primitive has an `entries` (number of entries) field, and `Count` is nothing but a number of entries. Therefore, anything based on `Bin` can be turned into a simple histogram _without re-filling_.
+
+```python
+roothist2 = pt_vs_vertices.histogram().root("name6")
+roothist2.Draw()
+```
+
+![Histogram from profile](hist_from_profileerr.png)
+
+This can help you answer questions about your plots using data that you already have on-hand.
+
+#### Alternate binning methods
+
+`Count`, `Average`, and `Deviate` differ from `Bin` in one important aspect: they aggregate data, but do not pass it on to a sub-aggregator.
 
 
 
 <!--
 
-Another fundamental aspect of Histogrammar is hidden in the above. The `Bin` constructor has several arguments with default values:
-
-  * `value`: how to fill a bin between the low and high edges;
-  * `underflow`: what to do with data below the low edge;
-  * `overflow`: what to do with data above the high edge;
-  * `nanflow`: what to do with data that is not a number (`NaN`).
-
-Usually, we'd want to count the number of entries in each bin and count the underflow and overflow (and "nanflow," included so that every input value fills _some_ bin). Therefore, the default for each of these arguments is `Count()`.
-
-To see this, try printing out `histogram` and its parts:
-
-```scala
-println(histogram)
-<Binning num=10 low=0.0 high=100.0 values=Count underflow=Count overflow=Count nanflow=Count>
-
-println(histogram.values)
-List(<Counting 152.0>, <Counting 256.0>, <Counting 215.0>, <Counting 160.0>, <Counting 130.0>, <Counting 51.0>, <Counting 24.0>, <Counting 10.0>, <Counting 1.0>, <Counting 1.0>)
-
-println(histogram.values(0).entries)
-152.0
-```
-
-Binning and counting are similar things: they can both summarize a data stream. They summarize it in different ways, but they can be drop-in replacements for one another. For instance, here is a two-dimensional histogram:
-
-```scala
-val hist2d = Bin(10, -100, 100, {event: Event => event.met.px},
-                 value = Bin(10, -100, 100, {event: Event => event.met.py}))
-
-for (event <- events.take(1000))
-  hist2d.fill(event)
-
-for (i <- 0 until 10) {
-  for (j <- 0 until 10)
-    print("%3.0f ".format(hist2d.values(i).values(j).entries))
-  println()
-}
-  0   0   0   0   0   0   0   0   0   0 
-  0   0   1   1   0   2   0   0   1   0 
-  0   0   0   3   9   9   3   0   0   0 
-  0   1   9  14  36  32  18   3   0   0 
-  0   2   9  48 105 106  41   7   0   1 
-  0   2  11  45 139 119  26   8   1   0 
-  0   2   8  21  54  36  22   7   0   0 
-  0   0   2   9  14   4   6   0   0   0 
-  0   0   0   0   2   0   0   0   0   0 
-  0   0   0   0   1   0   0   0   0   0 
-```
-
-(Sorry, no ASCII-art for two-dimensional histograms... yet.)
-
-In place of the first binning's counter, we used another binning. Three or four dimensional summaries of a dataset can be produced the same way, though they would be hard to visualize in any plotting library.
-
-We also could have used a counter on its own:
-
-```scala
-val count = Count()
-
-for (event <- events.take(1000))
-  count.fill(event)
-
-println(count)
-<Counting 1000.0>
-```
-
-though it's not very enlightening.
 
 ### Plotting anything
 
