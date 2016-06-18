@@ -239,144 +239,161 @@ This can help you answer questions about your plots using data that you already 
 
 #### Alternate binning methods
 
-`Count`, `Average`, and `Deviate` differ from `Bin` in one important aspect: they aggregate data, but do not pass it on to a sub-aggregator.
+`Count`, `Average`, and `Deviate` differ from `Bin` in one important aspect: they aggregate data, but do not pass it on to a sub-aggregator. If you compose aggregators into a tree, `Count`, `Average`, and `Deviate` will always be leaves and `Bin` will always be an internal node. This distinction is made in [the specification](../../specification) as primitives of "the first kind," "the second kind," etc. (The allusion to alien encounters is intentional.)
+
+Peruse the specification to see what other "first kind" primitives you can make and think about how you'd be able to use things like quantiles and min/max per bin in an analysis. In this tutorial, we move on to alternate binning methods.
+
+Standard binning slices a numeric interval into equal-length subintervals. The aggregator must do something with values that fall below (underflow) or above (overflow) the interval, and the data analyst has to guess an appropriate interval. It's not uncommon to make a histogram of, say, momentum, only to discover that the tail reaches higher than you expected (cutting it off) or lower than you expected (compressing the meaningful information into one or two bins). You then have to re-fill the histogram, which is aggregating when it happens frequently or takes a long time to fill.
+
+If we replace the "dense vector" of a standard histogram with a "sparse vector," in which only non-zero values are filled, then there is no need to specify a minimum and maximum bin before filling. Consider the following:
+
+```python
+histogram = SparselyBin(1.0, lambda event: event.met.pt)
+
+events = EventIterator()
+for i, event in enumerate(events):
+    if i == 1000: break
+    histogram.fill(event)
+
+roothist = histogram.root("name7", "title")
+roothist.Draw()
+```
+
+![Sparse histogram](sparsehist.png)
+
+This histogram was created with no prior knowledge that the minimum `event.met.pt` would be `0` and the maximum would be `93`. Only the bin width (the first argument, `1.0` momentum units per bin) had to be specified.
+
+To see how this histogram differs, print the bins:
+
+```python
+print(histogram.bins)
+```
+```
+{1: <Count 4.0>, 2: <Count 5.0>, 3: <Count 10.0>, 4: <Count 23.0>, 5: <Count 17.0>, 6: <Count 21.0>, 7: <Count 21.0>, 8: <Count 17.0>, 9: <Count 34.0>, 10: <Count 26.0>, 11: <Count 22.0>, 12: <Count 24.0>, 13: <Count 32.0>, 14: <Count 25.0>, 15: <Count 26.0>, 16: <Count 22.0>, 17: <Count 29.0>, 18: <Count 23.0>, 19: <Count 27.0>, 20: <Count 25.0>, 21: <Count 22.0>, 22: <Count 24.0>, 23: <Count 24.0>, 24: <Count 19.0>, 25: <Count 23.0>, 26: <Count 17.0>, 27: <Count 17.0>, 28: <Count 20.0>, 29: <Count 24.0>, 30: <Count 18.0>, 31: <Count 9.0>, 32: <Count 13.0>, 33: <Count 25.0>, 34: <Count 17.0>, 35: <Count 19.0>, 36: <Count 18.0>, 37: <Count 17.0>, 38: <Count 15.0>, 39: <Count 9.0>, 40: <Count 16.0>, 41: <Count 17.0>, 42: <Count 19.0>, 43: <Count 15.0>, 44: <Count 17.0>, 45: <Count 16.0>, 46: <Count 8.0>, 47: <Count 9.0>, 48: <Count 8.0>, 49: <Count 5.0>, 50: <Count 9.0>, 51: <Count 4.0>, 52: <Count 10.0>, 53: <Count 9.0>, 54: <Count 2.0>, 55: <Count 3.0>, 56: <Count 4.0>, 57: <Count 7.0>, 58: <Count 1.0>, 59: <Count 2.0>, 60: <Count 3.0>, 61: <Count 5.0>, 62: <Count 2.0>, 64: <Count 1.0>, 65: <Count 4.0>, 66: <Count 3.0>, 67: <Count 1.0>, 68: <Count 4.0>, 69: <Count 1.0>, 70: <Count 1.0>, 72: <Count 1.0>, 73: <Count 1.0>, 74: <Count 1.0>, 75: <Count 2.0>, 76: <Count 1.0>, 77: <Count 1.0>, 78: <Count 1.0>, 79: <Count 1.0>, 82: <Count 1.0>, 92: <Count 1.0>}
+```
+
+It's a Python dictionary, mapping non-empty bin indexes to `Count` objects. As new values are encountered, new bins are created, as well as a potentially new minimum and maximum.
+
+```python
+print(len(histogram.bins), histogram.low, histogram.high, histogram.minBin, histogram.maxBin)
+```
+```
+(79, 1.0, 93.0, 1, 92)
+```
+
+```python
+for i, event in enumerate(events):
+    if i == 1000: break
+    histogram.fill(event)
+
+print(len(histogram.bins), histogram.low, histogram.high, histogram.minBin, histogram.maxBin)
+```
+```
+(86, 0.0, 99.0, 0, 98)
+```
+
+Keep in mind that the memory use of a `Bin` is fixed, but a `SparselyBin` can grow without bound, depending on the distribution of the data. In particular, a distribution with a long tail might create a new bin for every tail event. Another concern is in converting a sparse histogram with far-flung values (such as `1e9` to represent "missing data") into a dense histogram: all the intermediate bins would be created with zero value.
+
+These are usually not issues in exploratory data analysis, where sparse histograms are the most useful. Just be sure to check `histogram.minBin` and `histogram.maxBin` before attempting to plot it and replace `SparselyBin` with `Bin` and well-chosen `low` and `high` values in the final analysis.
+
+That said, `SparselyBin` can be composed with any sub-aggregators to make sparse profile plots:
+
+```python
+pt_vs_vertices = SparselyBin(1.0, lambda event: event.numPrimaryVertices,
+                             Deviate(lambda event: event.met.pt))
+
+events = EventIterator()
+for i, event in enumerate(events):
+    if i == 10000: break
+    pt_vs_vertices.fill(event)
+
+roothist = pt_vs_vertices.root("name8")
+roothist.GetXaxis().SetTitle("number of primary vertices")
+roothist.GetYaxis().SetTitle("average MET pT")
+roothist.Draw()
+```
+
+![Sparsely binned profile plot](sparseprof.png)
+
+sparse two-dimensional histograms:
+
+```python
+hist2d = SparselyBin(5.0, lambda event: event.met.px,
+                     SparselyBin(5.0, lambda event: event.met.py))
+
+events = EventIterator()
+for i, event in enumerate(events):
+    if i == 1000: break
+    hist2d.fill(event)
+
+roothist = hist2d.root("name9", "title")
+roothist.Draw("colz")
+```
+
+![Sparsely binned two-dimensional histogram](sparsehist2d.png)
+
+and so on.
+
+Notice that this last example has negative indexes (print `hist2d.bins.keys()`) and a `SparselyBin` nested within a `SparselyBin`.
+
+Histogrammar has a few other binning methods:
+
+   * `CentrallyBin`: a fixed set of irregularly spaced bins, defined by _bin centers._ Specifying the irregularly spaced bins by their centers has two nice features: no gaps and no underflow/overflow. It has an analogy with one-dimensional clustering. As of Histogrammar version 0.7, an automated translation to ROOT has not been defined.
+   * `AdaptivelyBin`: the ultimate binning method for when you know nothing about the distribution: you specify a maximum number of bins and it adapts irregular bin centers to fit. It uses a one-dimensional clusering algrithm to adjust the bin centers, and the maximum memory use is finite (capped by the maximum number of bins). As of Histogrammar version 0.7, however, an automated translation to ROOT has not been defined.
+   * `Partition`: could be used for irregularly spaced bins defined by _bin edges,_ though it was intended for groups of plots with different cuts (such as a series of different pseudorapidity cuts or heavy ion centrality bins).
+
+Although `SparselyBin` requires more a priori knowledge (the bin width) than `AdaptivelyBin`, the fixed bin width and alignment of bins with round numbers are very useful in an analysis.
+
+All of these are aggregators "of the second kind" in [the specification](../../specification).
+
+#### Structures made of histograms
+
+If "first kind" primitives like `Count`, `Average`, and `Deviate` are like stars and binning methods like `Bin`, `SparselyBin`, and `AdaptivelyBin` are like clusters of stars, there are yet larger structures like galaxies and galactic clusters. Some of the things we do in an analysis involve a coordinated use of multiple histograms.
+
+One of the most common is an efficiency plot: the probability of passing a cut as a function of some binned variable. You could make this by filling two histograms, one with the cut, the other without, and then dividing them, but Histogrammar has a built-in primitive:
+
+```python
+frac = Fraction(lambda event: event.numPrimaryVertices > 5,
+                Bin(30, 0, 100, lambda event: event.met.pt))
+
+events = EventIterator()
+for i, event in enumerate(events):
+    if i == 10000: break
+    frac.fill(event)
+
+roothist = frac.root("name10", "title")
+roothist.SetTitle(";MET pT;fraction with number of primary vertices > 5")
+roothist.Draw()
+```
+
+![Efficiency plot](frac.png)
+
+Note that the ROOT object returned by `frac.root` is a `ROOT.TEfficiency`. This lets you choose different statistics for the error bars, which is not Histogrammar's job, but ROOT's.
+
+There's nothing stopping you from making an efficiency plot from a sparsely binned histogram. Histogrammar ensures that the numerator and denominator have the same binning.
+
+```python
+frac = Fraction(lambda event: event.numPrimaryVertices > 5,
+                SparselyBin(5.0, lambda event: event.met.pt))
+
+for i, event in enumerate(events):
+    if i == 10000: break
+    frac.fill(event)
+
+roothist = frac.root("name11", "title")
+roothist.SetTitle(";MET pT;fraction with number of primary vertices > 5")
+roothist.Draw()
+```
+
+![Sparsely binned efficiency plot](sparsefrac.png)
+
+In fact, you could compute the fraction of anything, even a simple count.
+
 
 
 
 <!--
 
-
-### Plotting anything
-
-With binning and counting, we can make histograms of any dimension, but that's still pretty limited. To plot anything, we only need a good set of aggregators and some imagination. For instance, suppose we have an aggregator that averages:
-
-```scala
-val average = Average({event: Event => event.met.pt})
-
-for (event <- events.take(1000))
-  average.fill(event)
-
-println(average)
-<Averaging mean=25.835336155264137>
-```
-
-We can combine this with binning to see the average per bin. For instance, we could compute the average pT (`event.met.pt`) per angle phi (`Math.atan2(event.met.py, event.met.px)`). In a cylindrically symmetric experiment, there should be no deviation versus phi.
-
-```scala
-val pt_vs_phi = Bin(30, -Math.PI, Math.PI,
-                    {event: Event => Math.atan2(event.met.py, event.met.px)},
-                    value = Average({event: Event => event.met.pt}))
-
-val events = EventIterator()
-for (event <- events.take(100000))
-  pt_vs_phi.fill(event)
-
-pt_vs_phi.println
-```
-
-The above produces
-
-```
-                         24.6564                                            26.6993
-                         +--------------------------------------------------------+
-[ -3.14 , -2.93 )  25.15 |              +                                         |
-[ -2.93 , -2.72 )  26.26 |                                            +           |
-[ -2.72 , -2.51 )  25.24 |                +                                       |
-[ -2.51 , -2.30 )  25.75 |                              +                         |
-[ -2.30 , -2.09 )  25.85 |                                 +                      |
-[ -2.09 , -1.88 )  26.07 |                                       +                |
-[ -1.88 , -1.68 )  26.02 |                                      +                 |
-[ -1.68 , -1.47 )  25.50 |                       +                                |
-[ -1.47 , -1.26 )  25.89 |                                  +                     |
-[ -1.26 , -1.05 )  26.53 |                                                   +    |
-[ -1.05 , -0.838)  26.04 |                                      +                 |
-[ -0.838, -0.628)  25.79 |                               +                        |
-[ -0.628, -0.419)  26.18 |                                          +             |
-[ -0.419, -0.209)  25.27 |                 +                                      |
-[ -0.209,  0    )  26.21 |                                           +            |
-[  0    ,  0.209)  25.92 |                                   +                    |
-[  0.209,  0.419)  25.19 |               +                                        |
-[  0.419,  0.628)  25.76 |                              +                         |
-[  0.628,  0.838)  25.57 |                         +                              |
-[  0.838,  1.05 )  25.80 |                               +                        |
-[  1.05 ,  1.26 )  25.45 |                      +                                 |
-[  1.26 ,  1.47 )  24.83 |     +                                                  |
-[  1.47 ,  1.68 )  25.51 |                       +                                |
-[  1.68 ,  1.88 )  25.10 |            +                                           |
-[  1.88 ,  2.09 )  24.91 |       +                                                |
-[  2.09 ,  2.30 )  25.08 |            +                                           |
-[  2.30 ,  2.51 )  25.50 |                       +                                |
-[  2.51 ,  2.72 )  25.15 |              +                                         |
-[  2.72 ,  2.93 )  25.04 |          +                                             |
-[  2.93 ,  3.14 )  25.47 |                      +                                 |
-                         +--------------------------------------------------------+
-```
-
-Oh no! That doesn't look flat versus phi&mdash; the points seem to be scattered around zero. Perhaps we need error bars.
-
-For that, we'd need to keep track of the variance in each bin, so consider an aggregator that accumulates the variance in addition to the mean.
-
-```scala
-val deviations = Deviate({event: Event => event.met.pt})
-
-for (event <- events.take(1000))
-  deviations.fill(event)
-
-println(deviations)
-<Deviating mean=25.66900474862857, variance=293.20009419456557>
-```
-
-Now we can build a classic "profile plot," which displays the mean and the error on the mean of each bin.
-
-```scala
-val pt_vs_phi = Bin(30, -Math.PI, Math.PI,
-                    {event: Event => Math.atan2(event.met.py, event.met.px)},
-                    value = Deviate({event: Event => event.met.pt}))
-
-val events = EventIterator()
-for (event <- events.take(100000))
-  pt_vs_phi.fill(event)
-
-pt_vs_phi.println
-```
-
-And we see that the binwise averages are all consistent with each other.
-
-```
-                                    23.5800                                 27.6424
-                                    +---------------------------------------------+
-[ -3.14 , -2.93 )  25.15 +-  0.2889 |              |--+---|                       |
-[ -2.93 , -2.72 )  26.26 +-  0.3171 |                          |---+--|           |
-[ -2.72 , -2.51 )  25.24 +-  0.2857 |               |--+---|                      |
-[ -2.51 , -2.30 )  25.75 +-  0.2849 |                     |--+--|                 |
-[ -2.30 , -2.09 )  25.85 +-  0.2794 |                      |--+--|                |
-[ -2.09 , -1.88 )  26.07 +-  0.2715 |                         |--+--|             |
-[ -1.88 , -1.68 )  26.02 +-  0.2674 |                        |--+--|              |
-[ -1.68 , -1.47 )  25.50 +-  0.2515 |                  |--+--|                    |
-[ -1.47 , -1.26 )  25.89 +-  0.2618 |                       |--+--|               |
-[ -1.26 , -1.05 )  26.53 +-  0.2583 |                              |--+--|        |
-[ -1.05 , -0.838)  26.04 +-  0.2594 |                        |--+--|              |
-[ -0.838, -0.628)  25.79 +-  0.2565 |                      |-+--|                 |
-[ -0.628, -0.419)  26.18 +-  0.2585 |                          |--+--|            |
-[ -0.419, -0.209)  25.27 +-  0.2620 |                |--+--|                      |
-[ -0.209,  0    )  26.21 +-  0.2851 |                          |--+--|            |
-[  0    ,  0.209)  25.92 +-  0.2750 |                       |--+--|               |
-[  0.209,  0.419)  25.19 +-  0.2913 |               |--+--|                       |
-[  0.419,  0.628)  25.76 +-  0.2874 |                     |--+--|                 |
-[  0.628,  0.838)  25.57 +-  0.2855 |                   |--+--|                   |
-[  0.838,  1.05 )  25.80 +-  0.3084 |                     |---+--|                |
-[  1.05 ,  1.26 )  25.45 +-  0.3011 |                 |---+--|                    |
-[  1.26 ,  1.47 )  24.83 +-  0.3027 |          |---+--|                           |
-[  1.47 ,  1.68 )  25.51 +-  0.3066 |                  |--+---|                   |
-[  1.68 ,  1.88 )  25.10 +-  0.3112 |             |---+--|                        |
-[  1.88 ,  2.09 )  24.91 +-  0.3088 |           |---+--|                          |
-[  2.09 ,  2.30 )  25.08 +-  0.3047 |             |---+--|                        |
-[  2.30 ,  2.51 )  25.50 +-  0.3130 |                  |--+---|                   |
-[  2.51 ,  2.72 )  25.15 +-  0.3249 |              |--+---|                       |
-[  2.72 ,  2.93 )  25.04 +-  0.3053 |             |--+---|                        |
-[  2.93 ,  3.14 )  25.47 +-  0.3154 |                 |---+--|                    |
-                                    +---------------------------------------------+
-```
 
 ### Alternative binning
 
@@ -404,7 +421,7 @@ Here is a sparse two-dimensional histogram. Drawing it is tricky because one has
 val hist2d = SparselyBin(10.0, {event: Event => event.met.px},
                  value = SparselyBin(10.0, {event: Event => event.met.py}))
 
-val events = EventIterator()
+events = EventIterator()
 for (event <- events.take(1000))
   hist2d.fill(event)
 
@@ -455,7 +472,7 @@ Histogrammar makes common techniques like fractions into first-class citizens. `
 val frac = Fraction({event: Event => event.numPrimaryVertices > 5},
                     Bin(30, 0, 100, {event: Event => event.met.pt}))
 
-val events = EventIterator()
+events = EventIterator()
 for (event <- events.take(1000000))
   frac.fill(event)
 
@@ -752,66 +769,66 @@ List((0.0,16.0), (1.0,12.0), (1.0,11.0), (1.0,12.0), (1.0,12.0), (1.0,13.0), (1.
 from histogrammar import *
 histogram2 = Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt))
 histogram2 = Histogram(91, 1.0, 93.0, lambda event: event.met.pt)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 1000: break
     histogram2.fill(event)
 
-roothist2 = histogram2.root("name2", "title")
+roothist2 = histogram2.root("name10", "title")
 roothist2.Draw()
 
 from histogrammar import *
 histogram = Select(unweighted, SparselyBin(1, lambda event: event.met.pt))
 histogram = SparselyHistogram(1, lambda event: event.met.pt)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 1000: break
     histogram.fill(event)
 
-roothist = histogram.root("name", "title")
+roothist = histogram.root("name11", "title")
 roothist.Draw()
 
 from histogrammar import *
 import math
 pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt)))
 pt_vs_phi = Profile(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 100000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.root("name", "title")
+roothist = pt_vs_phi.root("name12", "title")
 roothist.Draw()
 
 from histogrammar import *
 import math
 pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt)))
 pt_vs_phi = Profile(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 100000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.root("name", "title")
+roothist = pt_vs_phi.root("name13", "title")
 roothist.Draw()
 
 from histogrammar import *
 import math
 pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt)))
 pt_vs_phi = SparselyProfile(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 1000: break
     pt_vs_phi.fill(event)
 
-roothist = pt_vs_phi.root("name", "title")
+roothist = pt_vs_phi.root("name14", "title")
 roothist.Draw()
 
 from histogrammar import *
 import math
 pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt)))
 pt_vs_phi = SparselyProfileErr(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 1000: break
     pt_vs_phi.fill(event)
@@ -823,7 +840,7 @@ from histogrammar import *
 import math
 pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Bin(20, 0, 100, lambda event: event.met.pt)))
 pt_vs_phi = TwoDimensionallyHistogram(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), 20, 0, 100, lambda event: event.met.pt)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 100000: break
     pt_vs_phi.fill(event)
@@ -835,7 +852,7 @@ from histogrammar import *
 import math
 pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), SparselyBin(5.0, lambda event: event.met.pt)))
 pt_vs_phi = TwoDimensionallySparselyHistogram(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), 5.0, lambda event: event.met.pt)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 1000: break
     pt_vs_phi.fill(event)
@@ -847,7 +864,7 @@ from histogrammar import *
 import math
 hist = Select(unweighted, SparselyBin(5, lambda event: event.met.px, SparselyBin(5, lambda event: event.met.py)))
 hist = TwoDimensionallySparselyHistogram(5, lambda event: event.met.px, 5, lambda event: event.met.py)
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 1000: break
     hist.fill(event)
@@ -860,7 +877,7 @@ roothist.Draw("colz")
 from histogrammar import *
 fraction = Fraction(lambda event: event.numPrimaryVertices > 5, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
 fraction = Fraction(lambda event: event.numPrimaryVertices > 5, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     fraction.fill(event)
@@ -871,7 +888,7 @@ roothist.Draw()
 
 from histogrammar import *
 fraction = Fraction(lambda event: event.numPrimaryVertices > 5, SparselyBin(1, lambda event: event.met.pt))
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     fraction.fill(event)
@@ -886,7 +903,7 @@ roothist.Draw()
 from histogrammar import *
 fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
 fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     fraction.fill(event)
@@ -897,7 +914,7 @@ roothist.Draw()
 from histogrammar import *
 fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, SparselyBin(1, lambda event: event.met.pt)))
 fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, SparselyHistogram(1, lambda event: event.met.pt))
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     fraction.fill(event)
@@ -910,7 +927,7 @@ roothist.Draw()
 from histogrammar import *
 fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
 fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     fraction.fill(event)
@@ -922,7 +939,7 @@ roothist.Draw()
 from histogrammar import *
 fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, SparselyBin(1, lambda event: event.met.pt)))
 fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, SparselyHistogram(1, lambda event: event.met.pt))
-events = EventIterator("file:///home/pivarski/diana-github/histogrammar-docs/data/triggerIsoMu24_50fb-1.json.gz")
+events = EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     fraction.fill(event)
