@@ -2,6 +2,8 @@
 title: Making PyROOT plots
 type: default
 toc: false
+summary: |
+    <p>If you're working with Histogrammar in Python and want to use <a href="http://root.cern.ch/">ROOT</a> to draw plots, read this page.</p>
 ---
 
 ## Preliminaries
