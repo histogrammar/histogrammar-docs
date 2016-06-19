@@ -153,7 +153,7 @@ os.system("convert -delay 100 -loop 0 slice*.png hist3d.gif")
 
 This could be improved with better binning, better ROOT styling (such as a fixed `colz` scale), and animated GIF conversion (pause before repeating), but you get the idea.
 
-### Visual tour of Histogrammar primitives
+## Visual tour of Histogrammar primitives
 
 We managed to produce three different visualizations with only `Count` and `Bin`, but there are two dozen different kinds of primitives to work with. Let's try a few more.
 
@@ -237,7 +237,7 @@ roothist2.Draw()
 
 This can help you answer questions about your plots using data that you already have on-hand.
 
-#### Alternate binning methods
+### Alternate binning methods
 
 `Count`, `Average`, and `Deviate` differ from `Bin` in one important aspect: they aggregate data, but do not pass it on to a sub-aggregator. If you compose aggregators into a tree, `Count`, `Average`, and `Deviate` will always be leaves and `Bin` will always be an internal node. This distinction is made in [the specification](../../specification) as primitives of "the first kind," "the second kind," etc. (The allusion to alien encounters is intentional.)
 
@@ -341,12 +341,13 @@ Histogrammar has a few other binning methods:
    * `CentrallyBin`: a fixed set of irregularly spaced bins, defined by _bin centers._ Specifying the irregularly spaced bins by their centers has two nice features: no gaps and no underflow/overflow. It has an analogy with one-dimensional clustering. As of Histogrammar version 0.7, an automated translation to ROOT has not been defined.
    * `AdaptivelyBin`: the ultimate binning method for when you know nothing about the distribution: you specify a maximum number of bins and it adapts irregular bin centers to fit. It uses a one-dimensional clusering algrithm to adjust the bin centers, and the maximum memory use is finite (capped by the maximum number of bins). As of Histogrammar version 0.7, however, an automated translation to ROOT has not been defined.
    * `Partition`: could be used for irregularly spaced bins defined by _bin edges,_ though it was intended for groups of plots with different cuts (such as a series of different pseudorapidity cuts or heavy ion centrality bins).
+   * `Categorize`: like `SparselyBin`, but with string-valued categories, rather than numbers. A histogram over a categorical domain is also known as a "bar chart."
 
 Although `SparselyBin` requires more a priori knowledge (the bin width) than `AdaptivelyBin`, the fixed bin width and alignment of bins with round numbers are very useful in an analysis.
 
 All of these are aggregators "of the second kind" in [the specification](../../specification).
 
-#### Structures made of histograms
+### Structures made of histograms
 
 If "first kind" primitives like `Count`, `Average`, and `Deviate` are like stars and binning methods like `Bin`, `SparselyBin`, and `AdaptivelyBin` are like clusters of stars, there are yet larger structures like galaxies and galactic clusters. Some of the things we do in an analysis involve a coordinated use of multiple histograms.
 
@@ -389,189 +390,370 @@ roothist.Draw()
 
 In fact, you could compute the fraction of anything, even a simple count.
 
+```python
+frac = Fraction(lambda event: event.numPrimaryVertices > 5, Count())
+
+for i, event in enumerate(events):
+    if i == 100: break
+    frac.fill(event)
+
+print(frac.numerator.entries / frac.denominator.entries)
+```
+
+Another of these superstructures is a suite of stacked or overlaid histograms. The `Stack` and `Partition` primitives can both be thought of as extensions of `Fraction`. Whereas `Fraction` fills two sub-aggregators, one if a selection is satisfied and the other regardless, `Stack` fills _N + 1_ sub-aggregators, each with the events that pass _N_ successively tighter cuts.
+
+```python
+stack = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices,
+              Bin(100, 0, 100, lambda event: event.met.pt))
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    stack.fill(event)
+
+roothist = stack.root("name12", "name13", "name14", "name15", "name16")
+for i, h in enumerate(roothist.values()):
+    h.SetFillColor(i + 2)
+
+roothist.Draw()
+```
+
+![Stacked histograms](stack.png)
+
+The `stack.root` call has to give names to each of the histograms (consider using Python's `*args` syntax if you want to dynamically generates a list `args`) and it returns a Python `OrderedDict` of `ROOT.TH1D`. They keys of this dictionary are the cut thresholds and you can iterate over the values (as above) to give them styles.
+
+The most common use of stacked histograms in high energy physics doesn't fit the case above: usually, a stack shows data drawn from different sources. This illustrates a limitation in Histogrammar's scope: all aggregators, no matter how complex with nested primitives, are filled with data from _one_ data source. The lambda functions in almost all of the examples above took `event` as their argument. If you want to collect data from multiple sources, you'll have to do multiple aggregation "runs."
+
+Suppose that we have two collections: muons and jets. (In a typical physics analysis, the datasets would all be events, drawn from different Monte Carlo generators.) For simplicity, we'll make two lists from our `events` iterator:
+
+```python
+muons = []
+for i, event in enumerate(EventIterator()):
+    if i == 1000: break
+    for muon in event.muons:
+        muons.append(muon)
+
+jets = []
+for i, event in enumerate(EventIterator()):
+    if i == 1000: break
+    for jet in event.jets:
+        jets.append(jet)
+```
+
+And now we'll make two sets of the same kind of histogram. Note that all Histogrammar aggregators have a `copy()` method to recursively copy the tree structure, making an identical but independent object, and a `zero()` method to do the same, but making an empty container, rather than an identical one.
+
+```python
+template = Bin(100, -100, 100, lambda particle: particle.px)
+muonsPlot = template.copy()
+jetsPlot = template.copy()
+
+for muon in muons:
+    muonsPlot.fill(muon)
+
+for jet in jets:
+    jetsPlot.fill(jet)
+```
+
+The `Stack` primitive has a special constructor for taking histograms from different sources: if they're not compatible (different bins), it will raise an exception.
+
+```python
+stack = Stack.build(muonsPlot, jetsPlot)
+
+roothist = stack.root("name17", "name18")
+for i, h in enumerate(roothist.values()):
+    h.SetFillColor(i + 2)
+
+roothist.Draw()
+```
+
+![Stacked histograms from different sources](stack_different_sources.png)
+
+The beauty of this is that you don't have to aggregate them again to stack them in a different order. Just change the order of `Stack.build`.
+
+```python
+stack = Stack.build(jetsPlot, muonsPlot)
+
+roothist = stack.root("name19", "name20")
+for i, h in enumerate(reversed(roothist.values())):
+    h.SetFillColor(i + 2)
+
+roothist.Draw()
+```
+
+![Stacked histograms from different sources, stacked in the other order](stack_different_sources_other_order.png)
+
+(The first order was better.)
+
+Getting back to the relationship between `Fraction`, `Stack`, and `Partition`, a `Fraction` is just a `Stack` with one cut. That is,
+
+```python
+frac = Fraction(lambda event: event.numPrimaryVertices > 5,
+                Bin(30, 0, 100, lambda event: event.met.pt))
+```
+
+is the same thing as
+
+```python
+frac = Stack([5], lambda event: event.numPrimaryVertices,
+             Bin(30, 0, 100, lambda event: event.met.pt))
+
+# denominator is frac.values[0]
+# numerator is frac.values[1]
+```
+
+So what's `Partition`? An event that satisfies a `Stack` threshold fills all sub-aggregators up to and including that one. Each sub-aggregator in the list covers a subinterval of the previous one. As a Venn diagram, the domains the sub-aggregators in a `Stack` cover would look like this:
+
+![Venn diagram of ](stack_venn.png)
+
+An event that satisfies a `Partition` threshold fills exactly one sub-aggregator: their domains partition the space with a Venn diagram that looks like this:
+
+![Venn diagram of ](partition_venn.png)
+
+After filling, you simply overlay the plots. The `Stack` is guaranteed to not overlap because the first (back) histogram contains all events, the next contains a subset, etc. The plots of a `Partition` may overlap, but each represents a distinct set of events.
+
+Here is a real-world use of `Stack` and `Partition`. You might want to compare the momenta of muons measured by different parts of the detector (these cuts on pseudorapidity (`eta`) correspond to qualitatively different parts of the CMS detector, which is where these data originated).
+
+```python
+stack = Stack([0.8, 1.2, 1.7], lambda muon: abs(muon.eta),
+              Bin(50, 0, 200, lambda muon: muon.p))
+
+partition = Partition([0.8, 1.2, 1.7], lambda muon: abs(muon.eta),
+                      Bin(50, 0, 200, lambda muon: muon.p))
+
+events = EventIterator()
+for i, event in enumerate(events):
+    if i == 10000: break
+    for muon in event.muons:
+        stack.fill(muon)
+        partition.fill(muon)
+
+rootstack = stack.root("barrel", "overlap", "endcap-2", "endcap-1")
+for i, h in enumerate(rootstack.values()):
+    h.SetFillColor(i + 2)
+
+rootstack.Draw()
+```
+
+![Stacked muon momentum plots](muons_stacked.png)
+
+```python
+rootpartition = partition.root("barrel", "overlap", "endcap-2", "endcap-1")
+for i, h in enumerate(rootpartition.values()):
+    h.SetLineColor(i + 2)
+    h.SetLineWidth(2)
+
+rootpartition.Draw()
+```
+
+![Partitioned muon momentum plots](muons_partitioned.png)
+
+A `Partition` could also be used to define a single, irregularly binned histogram by bin edges (as opposed to `CentrallyBin`, which uses bin centers). Just replace the sub-aggregator with `Count()`.
+
+```python
+histogram = Partition([-2.4, -1.7, -1.2, -0.8, 0.0, 0.8, 1.2, 1.7, 2.4],
+                      lambda muon: muon.eta, Count())
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    for muon in event.muons:
+        histogram.fill(muon)
+
+print(histogram.cuts)
+```
+```
+((-inf, <Count 1.0>), (-2.4, <Count 70.0>), (-1.7, <Count 45.0>), (-1.2, <Count 47.0>), (-0.8, <Count 91.0>), (0.0, <Count 103.0>), (0.8, <Count 43.0>), (1.2, <Count 55.0>), (1.7, <Count 55.0>), (2.4, <Count 1.0>))
+```
+
+The first bin, for which `muon.eta` is at least minus infinity, has 1 muon. The next, which starts at &ndash;2.4 (the approximate edge of the detector), has 70 muons, continuing up to the last bin, which starts at 2.4 (the other edge of the detector), which also has 1 spurious muon. The first and last bins may be thought of as underflow and overflow because they extend to negative and positive infinity, or they may be treated as ordinary bins. The same is true of the first and last bins in a `CentrallyBin`.
+
+Although this use of `Partition` is not how it was originally intended, it is perfectly valid and should someday have an automated conversion to irregularly binned ROOT histograms. You should think of these primitives as your building blocks, provided to construct whatever statistic you need, and handle converting it to a visualization later.
+
+## Cuts and other adapters
+
+So far, we haven't mentioned cuts. The advantage of attaching fill rules to the primitives as lambda functions was to separate the analysis-specific code from the loop over data. It would completely miss the point to apply a cut like this:
+
+```python
+histogram = Bin(100, 0, 100, lambda event: event.met.pt)
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    if event.numPrimaryVertices > 5:    # oh no!
+        histogram.fill(event)
+```
+
+The `event.numPrimaryVertices > 5` is part of your analysis, and it belongs in the histogram definition. ROOT histograms constructed by `TTree.Draw` include selections as part of the constructor, and so can Histogrammar.
+
+In Histogrammar, however, it's another primitve: `Select`. It can take a boolean function or one that returns non-negative numbers as weights (0.0 is equivalent to cutting the event, 1.0 is equivalent to passing it, 0.5 downweights it by half, and 2.0 upweights it).
+
+```python
+histogram = Select(lambda event: event.numPrimaryVertices > 5,
+                   Bin(100, 0, 100, lambda event: event.met.pt))
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    histogram.fill(event)
+
+roothist = histogram.root("name22", "title")
+roothist.Draw()
+```
+
+![Histogram with a cut](selected.png)
+
+This might seem like a petty distinction because of the simplicity of the examples. This tutorial only covers the plotting front-end, not aggregation back-ends, so all of my examples involve a Python for loop where it's easy to see what the if statement is doing.
+
+But what if you had hundreds of histograms, all with different cuts? If each cut is applied by a `Select` primitive, you can scan over them programmatically and print the cut associated with the histogram. (A future version of Histogrammar will provide this algorithm.) The aggregators become self-documenting in a way that would never be possible with applying cuts in code.
+
+Moreover, what if you're distributing your analysis with PySpark, or accelerating it with Numpy or a JIT or GPU back-end? Then you won't have control over the loop that fills them. (Even the order of operations may be altered for performance.) Then it wouldn't be _possible_ to insert if statements: the analysis must be entirely expressed in the composition of primitives.
+
+### Adapters
+
+The way to think of building an analysis out of primitives is by thinking of each as an "adapter," like the plugs in a VCR or stereo. `Select` is a plug that applies a cut, but does nothing else. `Bin` splits a continuous interval, sending data into one of its sub-aggregators, etc.
+
+Here's another: `Branch` splits the data stream into _N_ copies, sending the data into all of its sub-aggregators. Suppose that we want to compute the minimum, first quartile, median, third quartile, and maximum of each bin in a histogram? We'd do that like this:
+
+```python
+metpt = lambda event: event.met.pt
+
+box_and_whiskers =
+    Bin(20, 0.5, 20.5, lambda event: event.numPrimaryVertices,
+        Branch(Minimize(metpt),
+               Quantile(0.25, metpt),
+               Quantile(0.5, metpt),
+               Quantile(0.75, metpt),
+               Maximize(metpt)))
+```
+
+Although ROOT does not have a way to draw it (as far as I know), this is known as a [box-and-whikers plot](http://en.wikipedia.org/wiki/Box_plot) and is used in place of a profile plot.
+
+Or maybe you want to make a residuals plot with ordinary least squares and mean absolute errors for comparison:
+
+```python
+residuals =
+    Bin(100, -10, 10, lambda hit: hit.position,
+        Branch(Deviate(lambda hit: hit.residual),
+               AbsoluteErr(lambda hit: hit.residual)))
+```
+
+You would need to write the code that extracts the data from these containers and plots them in ROOT since you're the only one who knows how you want to visualize them. But if you have already experienced a need for non-standard aggregations, you've been writing this kind of code already. ROOT histograms are manually filled with `SetBinContent`.
+
+## Directories of histograms
+
+Another kind of adapter, with much broader applicability, is the directory of histograms. ROOT has such a concept and uses it to organize histograms in a file on disk.
+
+Histogrammar uses it for a different reason: to bind histograms together so that they can all be filled as one object. I mentioned above that some back-ends restrict access to the fill loop because it might be executed out of order or dispatched to a Spark cluster or GPU. To do this individually with each histogram would be tedious for you, the data analyst and also be slow for the computer.
+
+A typical analysis involves hundreds of individual plots. Bind them together in an `UntypedLabel` primitive:
+
+```python
+import math
+
+muonAnalysis = UntypedLabel(
+    pt = Bin(100, 0, 100, lambda muon: muon.pt),
+    p = Bin(100, 0, 100, lambda muon: muon.p),
+    eta = Bin(100, -2.4, 2.4, lambda muon: muon.eta),
+    phi = Bin(100, -math.pi, math.pi, lambda muon: muon.phi),
+    # imagine this being much longer...
+    )
+
+for i, event in enumerate(events):
+    if i == 10000: break
+    for muon in event.muons:
+        muonAnalysis.fill(muon)
+```
+
+The filling loop only needs to call `muonAnalysis.fill` to fill all the histograms within it. `UntypedLabel` is a bit like `Branch` (above) except that it provides a name for each sub-aggregator, which can be very useful for bookkeeping.
+
+(Why `UntypedLabel`? There's also a variant named `Label` that can only deal with sub-aggregators of identical type, which is the case for the above example: they're all `Bin` of `Count`. If you want to mix histograms with profile plots, `Label` can't do it, but `UntypedLabel` can. Why, then, does `Label` even exist? For statically typed languages where that's an advantage. Python is not such a language so just use `UntypedLabel` for your Python work.)
+
+To pull one of the histograms out of the `UntypedLabel` and plot it, use `get`.
+
+```python
+import ROOT
+
+rootpt = muonAnalysis.get("pt").root("muon pt")
+rootp = muonAnalysis.get("p").root("muon p")
+rooteta = muonAnalysis.get("eta").root("muon eta")
+rootphi = muonAnalysis.get("phi").root("muon phi")
+
+canvas = ROOT.TCanvas()
+canvas.Clear()
+canvas.Divide(2, 2)
+
+canvas.cd(1); rootpt.Draw()
+canvas.cd(2); rootp.Draw()
+canvas.cd(3); rooteta.Draw()
+canvas.cd(4); rootphi.Draw()
+```
+
+![Muon plots](muons.png)
+
+Thanks to composability, `UntypedLabels` can be nested to make subdirectories for better organization.
+
+```python
+muonAnalysis = \
+    UntypedLabel(
+        cartesian = UntypedLabel(
+            px = Bin(100, 0, 100, lambda muon: muon.px),
+            py = Bin(100, 0, 100, lambda muon: muon.py),
+            pz = Bin(100, 0, 100, lambda muon: muon.pz)),
+        cylindrical = UntypedLabel(
+            pt = Bin(100, 0, 100, lambda muon: muon.pt),
+            eta = Bin(100, -2.4, 2.4, lambda muon: muon.eta),
+            phi = Bin(100, -math.pi, math.pi, lambda muon: muon.phi)))
+```
+
+If the analysis code is starting to look more like a configuration file than a computer program, good. It's supposed to.
+
+In the discussion on Stacked plots, I mentioned that a Histogrammar aggregation tree can only be applied to one data stream. This limitation again becomes relevant here: a physics analysis might involve plots of events (where each entry in a histogram is one event) as well as plots of muons and jets (where each entry in a histogram is one muon or jet), etc. These must be in _different bundles._
+
+For instance, suppose that we want histograms of event-level quantities (MET pt and number of primary vertices), histograms of muon-level quantities (momentum components, charge, and isolation), and histograms of jet-level quantities (momentum components and b-tag). This will require at least three `UntypedLabels`.
+
+```python
+eventAnalysis = \
+    UntypedLabel(
+        metpt = Bin(100, 0, 100, lambda event: event.met.pt),
+        numPrimaryVertices = Bin(100, 0, 100, lambda event: event.numPrimaryVertices))
+
+muonAnalysis = \
+    UntypedLabel(
+        pt = Bin(100, 0, 100, lambda muon: muon.pt),
+        eta = Bin(100, -2.4, 2.4, lambda muon: muon.eta),
+        phi = Bin(100, -math.pi, math.pi, lambda muon: muon.phi),
+        charge = CentrallyBin([-1, 1], lambda muon: muon.q),
+        isolation = Bin(100, 0, 100, lambda muon: muon.iso))
+
+jetAnalysis = \
+    UntypedLabel(
+        pt = Bin(100, 0, 100, lambda jet: jet.pt),
+        eta = Bin(100, -2.4, 2.4, lambda jet: jet.eta),
+        phi = Bin(100, -math.pi, math.pi, lambda jet: jet.phi),
+        btag = Bin(100, 0, 100, lambda jet: jet.btag))
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    eventAnalysis.fill(event)
+    for muon in event.muons:
+        muonAnalysis.fill(muon)
+    for jet in event.jets:
+        jetAnalysis.fill(jet)
+```
+
+If you remember in the section 
+
+
+
+## Named functions
+
+
+
+
+## Interoperability and distributed systems
 
 
 
 <!--
 
 
-### Alternative binning
 
-So far, we have only replaced the counters in a regularly binned histogram with different functions. We should be able to replace the binning procedure itself.
-
-A regular histogram is like a dense vector of aggregators. Every bin is allocated and initially populated with zero. We could also consider the sparse case, in which bins are only allocated when they are not filled with zero.
-
-To allocate a sparsely binned histogram, we don't need to specify the low and high edges, just the bin width (`10.0` here). Any finite integer is a valid bin index (in practice limited to 64-bit signed integers). We do, however, need to specify a bin width. This is useful for cases in which little is known about the distribution of interest: only a characteristic scale.
-
-```scala
-val sparse = SparselyBin(10.0, {event: Event => event.met.px})
-
-for (event <- events.take(1000))
-  sparse.fill(event)
-
-println(sparse.bins)
-Map(8 -> <Counting 1.0>, -1 -> <Counting 198.0>, -7 -> <Counting 3.0>, 2 -> <Counting 95.0>, -4 -> <Counting 39.0>, 5 -> <Counting 12.0>, 4 -> <Counting 23.0>, -5 -> <Counting 16.0>, 7 -> <Counting 1.0>, -2 -> <Counting 121.0>, 1 -> <Counting 150.0>, -8 -> <Counting 2.0>, 3 -> <Counting 55.0>, -6 -> <Counting 8.0>, 6 -> <Counting 1.0>, -3 -> <Counting 74.0>, 0 -> <Counting 201.0>)
-```
-
-Histogrammar represents this kind of aggregator as a hashmap from bin indexes to counters. Needless to say, we could have filled it with averages or deviations or other binning methods.
-
-Here is a sparse two-dimensional histogram. Drawing it is tricky because one has to evade the unfilled indexes.
-
-```scala
-val hist2d = SparselyBin(10.0, {event: Event => event.met.px},
-                 value = SparselyBin(10.0, {event: Event => event.met.py}))
-
-events = EventIterator()
-for (event <- events.take(1000))
-  hist2d.fill(event)
-
-val min = hist2d.values.flatMap(_.minBin).min
-for (i <- hist2d.minBin.get to hist2d.maxBin.get) {
-  val col = hist2d.bins.get(i)
-  col.flatMap(_.maxBin) match {
-    case Some(max) =>
-      for (j <- min to max)
-        hist2d.bins.get(i).flatMap(_.bins.get(j)) match {
-          case Some(counting) =>
-            print("%3.0f ".format(counting.entries))
-          case None =>
-            print("    ")
-        }
-    case None =>
-      print("    ")
-  }
-  println()
-}
-                          2                   1 
-                                      1       1 
-                  1   1   3   1   1   1               1 
-      1       1   2   5   2   5   4   3   1   3   1 
-          1   2   3   2   8  10   8   4   5   2   1 
-      1       2   7   9   7  12   6   8   9   4 
-      1   2   4   3  12  19  24  21  15  11   6   5       1 
-      1   4   7   7  23  27  34  47  19  16  16   6 
-      1   2   5   8  20  30  45  56  17  10   5   2   1   1 
-      1   1   4   6   8  22  36  28  11   7   5   4       1 
-      1           7  14  17  18  13   8   6   8   2   2 
-  1       1   2   2   5  10   6   5   7   1   3 
-          1   1       1       5   8   5   4   1   1 
-              1   1           1   1   3 
-                          2   3 
-              1 
-```
-
-### Superstructures
-
-If counting, averaging, and deviating are aggregators that typically go inside of some kind of binning, there are some aggregators that typically surround a binning. One of these computes fractions.
-
-For decades, physicists have constructed efficiency plots manually: by booking two histograms with exactly the same binning, applying a selection to one and not the other, and then dividing them bin-by-bin. If the bin edges of the two histograms are not correctly aligned or if a code revision is applied to one and not the other, the result silently becomes meaningless.
-
-Histogrammar makes common techniques like fractions into first-class citizens. `Fraction` is an aggregator on the same level as `Bin` and `Count`, and may be mixed freely with them.
-
-```scala
-val frac = Fraction({event: Event => event.numPrimaryVertices > 5},
-                    Bin(30, 0, 100, {event: Event => event.met.pt}))
-
-events = EventIterator()
-for (event <- events.take(1000000))
-  frac.fill(event)
-
-frac.println
-```
-
-The final plot is the fraction of events with `numPrimaryVertices > 5` as a function of `met.pt`.
-
-```
-                        0.631723                                           0.764523
-                        +---------------------------------------------------------+
-underflow        nan    |                                                         |
-[  0   ,  3.33)  0.6432 |     +                                                   |
-[  3.33,  6.67)  0.6649 |              +                                          |
-[  6.67,  10  )  0.6803 |                     +                                   |
-[  10  ,  13.3)  0.6995 |                             +                           |
-[  13.3,  16.7)  0.7205 |                                      +                  |
-[  16.7,  20  )  0.7345 |                                            +            |
-[  20  ,  23.3)  0.7439 |                                                +        |
-[  23.3,  26.7)  0.7303 |                                          +              |
-[  26.7,  30  )  0.7139 |                                   +                     |
-[  30  ,  33.3)  0.6983 |                             +                           |
-[  33.3,  36.7)  0.6791 |                    +                                    |
-[  36.7,  40  )  0.6665 |               +                                         |
-[  40  ,  43.3)  0.6597 |            +                                            |
-[  43.3,  46.7)  0.6708 |                 +                                       |
-[  46.7,  50  )  0.6826 |                      +                                  |
-[  50  ,  53.3)  0.6886 |                        +                                |
-[  53.3,  56.7)  0.7105 |                                  +                      |
-[  56.7,  60  )  0.7318 |                                           +             |
-[  60  ,  63.3)  0.7308 |                                           +             |
-[  63.3,  66.7)  0.7259 |                                        +                |
-[  66.7,  70  )  0.7498 |                                                   +     |
-[  70  ,  73.3)  0.7535 |                                                    +    |
-[  73.3,  76.7)  0.7482 |                                                  +      |
-[  76.7,  80  )  0.7410 |                                               +         |
-[  80  ,  83.3)  0.7186 |                                     +                   |
-[  83.3,  86.7)  0.7510 |                                                   +     |
-[  86.7,  90  )  0.7139 |                                   +                     |
-[  90  ,  93.3)  0.7117 |                                  +                      |
-[  93.3,  96.7)  0.7532 |                                                    +    |
-[  96.7,  100 )  0.6634 |              +                                          |
-overflow         0.6428 |     +                                                   |
-nanflow          nan    |                                                         |
-                        +---------------------------------------------------------+
-```
-
-Typically, these plots come with error bars, but Histogrammar never assumes statistical techniques: that's the data analyst's job. A naive way to compute error bars on a fraction of counts is to treat them as binomials (valid far from zero or one).
-
-```scala
-def naiveConfidenceInterval(numer: Double, denom: Double, z: Double) = {
-  val p = numer/denom
-  val err = Math.sqrt(p * (1.0 - p) / denom)
-  p + z*err
-}
-
-frac.println(naiveConfidenceInterval, width=80)
-```
-
-We are beginning to learn interesting things about this dataset.
-
-```
-                        0.612726                                           0.796966
-                        +---------------------------------------------------------+
-underflow        nan    |                                                         |
-[  0   ,  3.33)  0.6432 |        |+-|                                             |
-[  3.33,  6.67)  0.6649 |               |+|                                       |
-[  6.67,  10  )  0.6803 |                    |+|                                  |
-[  10  ,  13.3)  0.6995 |                          |+|                            |
-[  13.3,  16.7)  0.7205 |                                 +|                      |
-[  16.7,  20  )  0.7345 |                                     |+                  |
-[  20  ,  23.3)  0.7439 |                                        |+               |
-[  23.3,  26.7)  0.7303 |                                    +|                   |
-[  26.7,  30  )  0.7139 |                               +|                        |
-[  30  ,  33.3)  0.6983 |                          +|                             |
-[  33.3,  36.7)  0.6791 |                    |+                                   |
-[  36.7,  40  )  0.6665 |                |+|                                      |
-[  40  ,  43.3)  0.6597 |              |+|                                        |
-[  43.3,  46.7)  0.6708 |                 |+|                                     |
-[  46.7,  50  )  0.6826 |                    |-+|                                 |
-[  50  ,  53.3)  0.6886 |                      |+-|                               |
-[  53.3,  56.7)  0.7105 |                             |+-|                        |
-[  56.7,  60  )  0.7318 |                                   |-+-|                 |
-[  60  ,  63.3)  0.7308 |                                   |-+-|                 |
-[  63.3,  66.7)  0.7259 |                                 |-+-|                   |
-[  66.7,  70  )  0.7498 |                                        |-+--|           |
-[  70  ,  73.3)  0.7535 |                                        |---+--|         |
-[  73.3,  76.7)  0.7482 |                                      |---+---|          |
-[  76.7,  80  )  0.7410 |                                   |----+---|            |
-[  80  ,  83.3)  0.7186 |                           |-----+----|                  |
-[  83.3,  86.7)  0.7510 |                                     |-----+-----|       |
-[  86.7,  90  )  0.7139 |                        |------+-------|                 |
-[  90  ,  93.3)  0.7117 |                      |--------+-------|                 |
-[  93.3,  96.7)  0.7532 |                                   |-------+--------|    |
-[  96.7,  100 )  0.6634 |     |----------+---------|                              |
-overflow         0.6428 |     |---+----|                                          |
-nanflow          nan    |                                                         |
-                        +---------------------------------------------------------+
-```
 
 ### Directories
 
@@ -712,243 +894,6 @@ println(bundled)
 ```
 
 In dynamically typed languages like Python, this distinction is not helpful: an aggregator either has an associated function or it does not, and it is always mutable. In these languages, the imperative tense is always used (`Count`, `Average`, `Bin`, `Label`).
-
-## Fistful of aggregators
-
-[The specification](../../specification) lists all of the available aggregators and how to use each one. However, that may be too much information for a start.
-
-The most useful aggregators are the following. Tinker with them to get familiar; building up an analysis is easier when you know "there's an app for that."
-
-**Simple counters:**
-
-  * [`Count`](../../specification/#count-sum-of-weights): just counts. Every aggregator has an `entries` field, but `Count` _only_ has this field.
-  * [`Average`](../..//specification/#average-mean-of-a-quantity) and [`Deviate`](../..//specification/#deviate-mean-and-variance): add mean and variance, cumulatively.
-  * [`Minimize`](../..//specification/#minimize-minimum-value) and [`Maximize`](../..//specification/#maximize-maximum-value): lowest and highest value seen.
-
-**Histogram-like objects:**
-
-  * [`Bin`](../..//specification/#bin-regular-binning-for-histograms) and [`SparselyBin`](../..//specification/#sparselybin-ignore-zeros): split a numerical domain into uniform bins and redirect aggregation into those bins.
-  * [`Categorize`](../..//specification/#categorize-string-valued-bins-bar-charts): split a string-valued domain by unique values; good for making bar charts (which are histograms with a string-valued axis).
-  * [`Partition`](../..//specification/#partition-exclusive-filling): split a numerical domain into arbitrary subintervals, usually for separate plots like particle pseudorapidity or collision centrality.
-
-**Collections:**
-
-  * [`Label`](../../specification/#label-directory-with-string-based-keys), [`UntypedLabel`](../..//specification/#untypedlabel-directory-of-different-types), and [`Index`](../..//specification/#index-list-with-integer-keys): bundle objects with string-based keys (`Label` and `UntypedLabel`) or simply an ordered array (effectively, integer-based keys) consisting of a single type (`Label` and `Index`) or any types (`UntypedLabel`).
-  * [`Branch`](../../specification/#branch-tuple-of-different-types): for the fourth case, an ordered array of any types. A `Branch` is useful as a "cable splitter". For instance, to make a histogram that tracks minimum and maximum value, do this:
-
-```scala
-val rangeHistogram = Bin(30, 0, 100, {event: Event => event.met.pt},
-             Branch(Minimize({event: Event => event.numPrimaryVertices}),
-                    Maximize({event: Event => event.numPrimaryVertices})))
-
-for (event <- events.take(1000))
-  rangeHistogram.fill(event)
-
-println(rangeHistogram.values(10).i0.min)
-1.0
-
-println(rangeHistogram.values(10).i1.max)
-13.0
-
-println(rangeHistogram.values map {v => (v.i0.min, v.i1.max)})
-List((0.0,16.0), (1.0,12.0), (1.0,11.0), (1.0,12.0), (1.0,12.0), (1.0,13.0), (1.0,12.0), (1.0,12.0), (1.0,13.0), (1.0,14.0), (1.0,13.0), (2.0,12.0), (1.0,10.0), (1.0,14.0), (2.0,10.0), (0.0,9.0), (3.0,10.0), (3.0,12.0), (4.0,10.0), (3.0,13.0), (3.0,9.0), (5.0,5.0), (3.0,6.0), (4.0,4.0), (8.0,8.0), (NaN,NaN), (5.0,5.0), (NaN,NaN), (NaN,NaN), (NaN,NaN))
-```
-
-**Filtering:**
-
-  * [`Select`](../../specification/#select-apply-a-cut): general purpose cutting. If you need a histogram or a collection of histograms to be filtered by some quantity, wrap them in a `Select`.
-
-**Non-aggregation:**
-
-  * [`Bag`](../../specification/#bag-accumulate-values-for-scatter-plots) and [`Sample`](../..//specification/#sample-reservoir-sampling): collect data points, rather than aggregate quantities.
-
-
-
-
-
-from histogrammar import *
-histogram2 = Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt))
-histogram2 = Histogram(91, 1.0, 93.0, lambda event: event.met.pt)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 1000: break
-    histogram2.fill(event)
-
-roothist2 = histogram2.root("name10", "title")
-roothist2.Draw()
-
-from histogrammar import *
-histogram = Select(unweighted, SparselyBin(1, lambda event: event.met.pt))
-histogram = SparselyHistogram(1, lambda event: event.met.pt)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 1000: break
-    histogram.fill(event)
-
-roothist = histogram.root("name11", "title")
-roothist.Draw()
-
-from histogrammar import *
-import math
-pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt)))
-pt_vs_phi = Profile(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 100000: break
-    pt_vs_phi.fill(event)
-
-roothist = pt_vs_phi.root("name12", "title")
-roothist.Draw()
-
-from histogrammar import *
-import math
-pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt)))
-pt_vs_phi = Profile(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 100000: break
-    pt_vs_phi.fill(event)
-
-roothist = pt_vs_phi.root("name13", "title")
-roothist.Draw()
-
-from histogrammar import *
-import math
-pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Average(lambda event: event.met.pt)))
-pt_vs_phi = SparselyProfile(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 1000: break
-    pt_vs_phi.fill(event)
-
-roothist = pt_vs_phi.root("name14", "title")
-roothist.Draw()
-
-from histogrammar import *
-import math
-pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), Deviate(lambda event: event.met.pt)))
-pt_vs_phi = SparselyProfileErr(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), lambda event: event.met.pt)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 1000: break
-    pt_vs_phi.fill(event)
-
-roothist = pt_vs_phi.root("name", "title")
-roothist.Draw()
-
-from histogrammar import *
-import math
-pt_vs_phi = Select(unweighted, Bin(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), Bin(20, 0, 100, lambda event: event.met.pt)))
-pt_vs_phi = TwoDimensionallyHistogram(30, -math.pi, math.pi, lambda event: math.atan2(event.met.py, event.met.px), 20, 0, 100, lambda event: event.met.pt)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 100000: break
-    pt_vs_phi.fill(event)
-
-roothist = pt_vs_phi.root("name", "title")
-roothist.Draw("colz")
-
-from histogrammar import *
-import math
-pt_vs_phi = Select(unweighted, SparselyBin(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), SparselyBin(5.0, lambda event: event.met.pt)))
-pt_vs_phi = TwoDimensionallySparselyHistogram(2.0*math.pi/30.0, lambda event: math.atan2(event.met.py, event.met.px), 5.0, lambda event: event.met.pt)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 1000: break
-    pt_vs_phi.fill(event)
-
-roothist = pt_vs_phi.root("name", "title")
-roothist.Draw("colz")
-
-from histogrammar import *
-import math
-hist = Select(unweighted, SparselyBin(5, lambda event: event.met.px, SparselyBin(5, lambda event: event.met.py)))
-hist = TwoDimensionallySparselyHistogram(5, lambda event: event.met.px, 5, lambda event: event.met.py)
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 1000: break
-    hist.fill(event)
-
-roothist = hist.root("name", "title")
-roothist.Draw("colz")
-
-
-
-from histogrammar import *
-fraction = Fraction(lambda event: event.numPrimaryVertices > 5, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
-fraction = Fraction(lambda event: event.numPrimaryVertices > 5, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 10000: break
-    fraction.fill(event)
-
-roothist = fraction.root("x", "y")
-roothist.Draw()
-
-
-from histogrammar import *
-fraction = Fraction(lambda event: event.numPrimaryVertices > 5, SparselyBin(1, lambda event: event.met.pt))
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 10000: break
-    fraction.fill(event)
-
-roothist = fraction.root("x", "y")
-roothist.Draw()
-
-
-
-
-
-from histogrammar import *
-fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
-fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 10000: break
-    fraction.fill(event)
-
-roothist = fraction.root("one", "two", "three", "four", "five")
-roothist.Draw()
-
-from histogrammar import *
-fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, SparselyBin(1, lambda event: event.met.pt)))
-fraction = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices, SparselyHistogram(1, lambda event: event.met.pt))
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 10000: break
-    fraction.fill(event)
-
-roothist = fraction.root("one", "two", "three", "four", "five")
-roothist.Draw()
-
-
-
-from histogrammar import *
-fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, Bin(91, 1.0, 93.0, lambda event: event.met.pt)))
-fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Histogram(91, 1.0, 93.0, lambda event: event.met.pt))
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 10000: break
-    fraction.fill(event)
-
-roothist = fraction.root("one", "two", "three", "four", "five")
-roothist.Draw()
-
-
-from histogrammar import *
-fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, Select(unweighted, SparselyBin(1, lambda event: event.met.pt)))
-fraction = Partition([5, 10, 15, 20], lambda event: event.numPrimaryVertices, SparselyHistogram(1, lambda event: event.met.pt))
-events = EventIterator()
-for i, event in enumerate(events):
-    if i == 10000: break
-    fraction.fill(event)
-
-roothist = fraction.root("one", "two", "three", "four", "five")
-roothist.Draw()
-
-
-
 
 
 
