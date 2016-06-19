@@ -341,7 +341,7 @@ Histogrammar has a few other binning methods:
    * `CentrallyBin`: a fixed set of irregularly spaced bins, defined by _bin centers._ Specifying the irregularly spaced bins by their centers has two nice features: no gaps and no underflow/overflow. It has an analogy with one-dimensional clustering. As of Histogrammar version 0.7, an automated translation to ROOT has not been defined.
    * `AdaptivelyBin`: the ultimate binning method for when you know nothing about the distribution: you specify a maximum number of bins and it adapts irregular bin centers to fit. It uses a one-dimensional clusering algrithm to adjust the bin centers, and the maximum memory use is finite (capped by the maximum number of bins). As of Histogrammar version 0.7, however, an automated translation to ROOT has not been defined.
    * `Partition`: could be used for irregularly spaced bins defined by _bin edges,_ though it was intended for groups of plots with different cuts (such as a series of different pseudorapidity cuts or heavy ion centrality bins).
-   * `Categorize`: like `SparselyBin`, but with string-valued categories, rather than numbers. A histogram over a categorical domain is also known as a "bar chart."
+   * `Categorize`: like `SparselyBin`, but with string-valued categories, rather than numbers. A histogram over a categorical domain is also known as a "bar chart." There's a certain program that excels at these.
 
 Although `SparselyBin` requires more a priori knowledge (the bin width) than `AdaptivelyBin`, the fixed bin width and alignment of bins with round numbers are very useful in an analysis.
 
@@ -737,83 +737,151 @@ for i, event in enumerate(events):
         jetAnalysis.fill(jet)
 ```
 
-If you remember in the section 
+If you remember in the section on applying cuts with `Select`, I said that we want to keep physics-specific knowledge out of the for loop. You might object that we have it here: three separate calls to `fill` for each level of structure. If a fourth "analysis" is added, plotting photons for instance, then we'd have to roll up our sleeves and change the for loop again. If PySpark is the back-end, we'd have to change the chain of RDDs. A GPU-accelerated analysis would likely require separate runs for each particle type.
 
+However, it's not that bad: this kind of interference in the for loop does not introduce any physics-specific constants, as a cut would. It only depends on the structure of the data, the fact that `events` contain `muons` and `jets` (and `photons`, etc.). Structuring and destructuring data is what PySpark and the rest were designed to do. They _should_ be given information about how it's structured and how we want to break it up.
 
+The fact that your plots need to be packaged according to input type need not be considered a deficiency. This is one of the basic structural elements of an analysis: think of the times you've heard somebody ask, "Is this a plot for each muon or for each event?"
 
-## Named functions
+Hopefully the reasons we want to separate physics-specific calculations from the data pipelining are now clear:
 
+   * The rule for filling a histogram is defined right next to its parameters (edges, number of bins), so that incongruities between the two are more easily noticed (such as wrong units, etc.).
+   * An analysis tree is self-documenting: it contains all the information necessary to determine which cuts were applied to each quantity. This information can be used as a cross-check or an automated axis label.
+   * If the back-end does not depend on any physics-specific information, a different back-end can be plugged in without alterations. Analysts can use a slow Python for loop for testing and then submit their analysis, unchanged, to a faster system on a larger dataset.
+   * If the back-end depends on the gross "shape" of the data, such as the fact that `events` contain `muons` and `jets`, then they can use that for optimization at the expense of a little more work in setting it up.
 
+## Non-inline and named functions
 
+In all of the above examples, the fill rules are very simple: take an event and extract the MET pT (`lambda event: event.met.pt`); take a muon and cut if the pseudorapidity is less than 2.4 (`lambda muon: abs(muon) < 2.4`). In real life, they might not be simple.
+
+If you find that you need more than one line to perform a calculation, Python forces you to use an ordinary, non-lambda function. While it's possible to perform loops in list comprehensions and branches with a ternary-if expression, these advanced Python techniques can make code get unreadable fast.
+
+If you need multiple lines, just define the function with def:
+
+```python
+def muonPt_over_metPt(both):
+    muon, event = both                  # unpack (muon, event) pairs
+    return muon.pt / event.met.pt
+
+histogram = Bin(100, 0, 2, muonPt_over_metPt)
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    for muon in event.muons:
+        histogram.fill((muon, event))   # data stream of (muon, event) pairs
+```
+
+There is a hidden advantage in this code. The fact that the function is named allows Histogrammar to capture its name and make it accessible from the `histogram` object:
+
+```python
+
+roothist = histogram.root("name23")
+roothist.GetXaxis().SetTitle(histogram.quantity.name)
+roothist.Draw()
+```
+
+![Histogram of complex quantity](pt_ratio.png)
+
+So we can assign axis labels programmatically. The fact that this function is named `muonPt_over_metPt` is declared right above its definition, right after the "`def`." If we change the content of the function (such as a unit conversion for some quantity with units), the new behavior is close to the name, and hopefully we'd notice the error if the label is no longer appropriate.
+
+Given that we're using the name of the function as an axis label, what if we want special symbols in the name? We can override the Python name like this:
+
+```python
+muonPt_over_metPt = named(muonPt_over_metPt, "muon p_{T} / MET p_{T}")
+```
+
+This `named` can be used for lambda functions as well.
+
+It's also common for an analysis to show the same quantity plotted many different ways, looking for correlations between pairs of quantities. A non-lambda or named lambda function can be reused:
+
+```python
+def muonPt(muon): return muon.pt
+
+muonAnalysis = UntypedLabel(
+    pt_vs_eta = Bin(100, -2.4, 2.4, lambda muon: muon.eta, Deviate(muonPt)),
+    pt_vs_phi = Bin(100, -math.pi, math.pi, lambda muon: muon.phi, Deviate(muonPt)),
+    pt_positive = Select(lambda muon: muon.q > 0, Bin(100, -math.pi, math.pi, muonPt)),
+    pt_negative = Select(lambda muon: muon.q < 0, Bin(100, -math.pi, math.pi, muonPt)))
+
+for i, event in enumerate(events):
+    if i == 1000: break
+    for muon in event.muons:
+        muonAnalysis.fill(muon)
+```
+
+Now if you set all axis labels with `quantity.name` and change the name and definition of `muonPt` once, it gets updated in all four plots with no extra work. For instance,
+
+```python
+muonPt = named(lambda muon: muon.pt / 1000.0, "muon p_{T} [TeV]")
+```
+
+changes all uses of `muonPt` to TeV and gets every axis label right. The difference between these labels and ROOT's names and titles is that Histogrammar assigns a name to each _quantity_ to be plotted, whereas ROOT assigns a name to each _plot._ The fact that many plots can share the same quantity makes this fine-grained labeling useful.
+
+### Caching functions
+
+If you've concerned that replacing expressions like `muon.pt` with functions like `lambda muon: muon.pt` everywhere would make the analysis slow, note that you can cache functions. If a function is expensive and used in many plots, wrap it in `cached`:
+
+```python
+muonPt = cached(named(lambda muon: muon.pt / 1000.0, "muon p_{T} [TeV]"))
+```
+
+Calling this function several times in a row with the same inputs will cause it to return the last computed value, rather than recomputing the value.
+
+### Strings as functions
+
+Uniquely to the Python version of Histogrammer, a simple string could be used in place of a function. That is, all examples in this entire tutorial could be simplified by replacing
+
+```python
+histogram = Bin(100, 0, 100, lambda event: event.met.pt)
+```
+
+with
+
+```python
+histogram = Bin(100, 0, 100, "met.pt")
+```
+
+and
+
+```python
+histogram =
+    Select(lambda muon: muon.iso > 3,
+        Bin(100, 0, 100, lambda muon: math.sqrt(muon.px**2 + muon.py**2)))
+```
+
+with
+
+```python
+histogram = Select("iso > 3", Bin(100, 0, 100, "sqrt(px**2 + py**2)"))
+```
+
+That is, you can use strings reminiscent of `TTree.Draw`. These strings are interpreted as Python expressions with all imported modules, the `math` library, and the fields of the `event` or `muon` object imported. Python knows what `met` is because the input `events` have `met` as a field. Python knows what `px` and `py` are in the context of a stream of `muons`, and it knows about `sqrt` because that's in the `math` library.
+
+Other back-ends might interpret these strings differently: for instance as Numpy operations or CUDA/OpenCL code. However, basic operations like `+`, `-`, `*`, and `/` would always work.
+
+Unless overriden by `named`, the name of a string-based function is equal to the expression itself. In the above example, a ROOT histogram would be labeled with `"iso > 3"` and `"sqrt(px**2 + py**2)"`.
 
 ## Interoperability and distributed systems
 
+At the end of this tutorial on using Histogrammar in Python with PyROOT, we'll see how to send histograms to other systems running Histogrammar or pull histograms in from such systems.
 
+Every Histogrammar primitive has a JSON representation, and these representations are identical in all languages and systems Histogrammar is implemented on. Sending a bundle of histograms across the network is as transparent as sending JSON text.
 
-<!--
+```python
+bundle = Label( \
+  MET = Label(
+    px = Bin(10, 0, 100, lambda event: event.met.px),
+    py = Bin(10, 0, 100, lambda event: event.met.py)),
+  primary = Label(
+    num = Bin(10, 0, 100, lambda event: event.numPrimaryVertices)))
 
+for i, event in enumerate(events):
+    if i == 1000: break
+    bundle.fill(event)
 
-
-
-### Directories
-
-Another important kind of superstructure is the directory. Most analyses require lots of histograms, and it helps to be able to collect them into a bundle. `Label` is an aggregator that names histograms by putting them in a hashmap.
-
-```scala
-val bundle = Label(
-  "MET px" -> Bin(10, 0, 100, {event: Event => event.met.px}),
-  "MET py" -> Bin(10, 0, 100, {event: Event => event.met.py}),
-  "num primary" -> Bin(10, 0, 100, {event: Event => event.numPrimaryVertices}))
-```
-
-Like any other aggregator, it has a `fill` method. For a collection, this method fills all of its contents.
-
-```scala
-for (event <- events.take(1000))
-  bundle.fill(event)
-
-println(bundle("MET px").entries)
-1000.0
-
-println(bundle("MET py").entries)
-1000.0
-
-println(bundle("num primary").entries)
-1000.0
-```
-
-As a by-product of composability, we get subdirectories for free:
-
-```scala
-val bundle = Label(
-  "MET" -> Label(
-    "px" -> Bin(10, 0, 100, {event: Event => event.met.px}),
-    "py" -> Bin(10, 0, 100, {event: Event => event.met.py})
-  ),
-  "primary" -> Label(
-    "num" -> Bin(10, 0, 100, {event: Event => event.numPrimaryVertices})
-  )
-)
-
-for (event <- events.take(1000))
-  bundle.fill(event)
-
-println(bundle("MET")("px").entries)
-1000.0
-
-println(bundle("MET")("py").entries)
-1000.0
-
-println(bundle("primary")("num").entries)
-1000.0
-```
-
-## Interoperability
-
-Each of these aggregators has a stable JSON representation that is validated across the different language versions of Histogrammar. That is, you can dump a histogram or group of histograms from Scala to JSON and load that JSON into equivalent structures in Python.
-
-```scala
-println(bundle.toJson.stringify)
+import json
+serialized = json.dumps(bundle.toJson())
+print(serialized)
 ```
 
 produces
@@ -869,32 +937,17 @@ produces
 }
 ```
 
-This allows you to decouple parts of your analysis. It may be easier or faster to aggregate data in one language or framework and then plot it in another. The desire to use a particular library for final plots shouldn't force you to do all of your analysis in that library.
+on any system. If any names were used, they'd appear here so that they can be carried on. Only the functions themselves, the Python bytecode, is dropped. A Scala/R/Javascript implementation of Histogrammar wouldn't know what to do with Python bytecode.
 
-### The grammar of Histogrammar
+Similarly, we can create a tree of aggregators from JSON:
 
-You may have noticed that all of the aggregator constructors are imperative verbs: `Count`, `Average`, `Bin`, `Label` while the objects themselves are represented as gerunds: `Counting`, `Averaging`, `Binning`, `Labeling`. That distinction has to do with JSON: aggregators have different features before and after serialization.
+```python
+bundle2 = Factory.fromJson(json.loads(serialized))
 
-| Before serialization | After serialization |
-|:---------------------|:--------------------|
-| Has an associated function that determines how to fill. | Has no such function; might have been filled in another language. (If the function was named, its name is carried over to help with bookkeeping.) |
-| Can be filled or combined with other aggregators of the same type. | Can only be combined with other aggregators of the same type. |
-| Mutable: `entries` and fill values can change. | Immutable: `entries` and fill values are fixed. |
-
-In statically typed languages like Scala, aggregators are named with a gerund before serialization and past-tense after serialization (`Counted`, `Averaged`, `Binned`, `Labeled`).
-
-```scala
-println(bundle)
-<Labeling values=Label size=2>
-
-val bundled = Factory.fromJson(bundle.toJson.stringify)
-
-println(bundled)
-<Labeled values=Label size=2>
+roothist = bundle2.get("MET").get("px").root("name24")
+roothist.Draw()
 ```
 
-In dynamically typed languages like Python, this distinction is not helpful: an aggregator either has an associated function or it does not, and it is always mutable. In these languages, the imperative tense is always used (`Count`, `Average`, `Bin`, `Label`).
+![Reconstituted plot](reconstituted.png)
 
-
-
--->
+That histogram could have come from anywhere&mdash; a PDP-8 running COBOL&mdash; an iWatch tracking jogging speed&mdash; anywhere. All you need is a conduit that prints text, and you can plot it in ROOT.
