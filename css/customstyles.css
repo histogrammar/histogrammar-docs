@@ -1114,3 +1114,9 @@ pre {
 h2[id] {
     border-bottom: solid 2px #4e5f70;
 }
+
+.post-content img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}

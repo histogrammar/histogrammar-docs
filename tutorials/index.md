@@ -16,14 +16,14 @@ Other pages refer back to these for set-up that would otherwise have to be repea
 
 ### Scala
 
-  * {% include progress.html complete=100 %} [Basic use in Scala](scala-basic): Histogrammar without any custom frontends (for plotting) or backends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
+  * {% include progress.html complete=100 %} [Basic use in Scala](scala-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
 
 ### Python
 
-  * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar without any custom frontends (for plotting) or backends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
+  * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar with [Matplotlib](http://matplotlib.org/), the most popular Python plotting library, and no custom back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
   * {% include progress.html complete=0 %} [Plotting on the commandline](python-commandline): How to pipe data from grep, sed, and awk into Histogrammar in UNIX shell scripts.
 
-## Plotting frontends
+## Plotting front-ends
 
 ### Scala
 
@@ -32,10 +32,9 @@ Other pages refer back to these for set-up that would otherwise have to be repea
 ### Python
 
   * {% include progress.html complete=0 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the [Bokeh plotting package in Python](http://bokeh.pydata.org/en/latest/).
-  * {% include progress.html complete=10 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the [ROOT analysis package in Python](http://root.cern.ch/).
-  * {% include progress.html complete=0 %} [Making Matplotlib plots](python-root): How to send Histogrammar data to the [Matplotlib plotting package](http://matplotlib.org/).
+  * {% include progress.html complete=100 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the [ROOT analysis package in Python](http://root.cern.ch/).
 
-## Aggregation backends
+## Aggregation back-ends
 
 ### Scala
 
