@@ -24,6 +24,80 @@ spark-shell --jars=`ls target/**/*.jar | tr '\n' ','`
 
 (lists all JARs, concatenates them with commas, and passes to Spark). Use whatever other options are necessary for your Spark installation, such as a custom `--master`.
 
+
+## Plotting a Histogram in `Scala`
+
+First example of plotting a histogram with `scala-bokeh` uses `Scala` and artificial data for the sake of simplicity.
+
+Start by importing the Histogrammar package and the plotting library:
+
+```scala
+import org.dianahep.histogrammar._
+import org.dianahep.histogrammar.bokeh._
+```
+
+Generate artificial data:
+
+```scala
+val simple = List(3.4, 2.2, -1.8, 0.0, 7.3, -4.7, 1.6, 0.0, -3.0, -1.7)
+```
+
+Book two histograms:
+
+```scala
+val one = Histogram(5, -5, 8, {x: Double => x})
+val two = Histogram(5, -3, 7, {x: Double => x})
+```
+
+Fill both histograms in one line of code using `Label` class:
+
+```scala
+val labeling = Label("one" -> one, "two" -> two)
+simple.foreach(labeling.fill(_))
+```
+
+Start by plotting histogram `one`:
+
+```scala
+val plot_one = one.bokeh().plot()
+save(plot_one,"scala_plot_one.html")
+```
+
+### Configuring Bokeh Glyph attributes
+
+By default, a line glyph of black color is plotted. One can easily turn this into a bar plot filled with red by passing arguments to `bokeh()` method as follows:
+
+```scala
+import io.continuum.bokeh._
+val plot_one = one.bokeh(glyphType="histogram",fillColor=Color.Red).plot()
+save(plot_one,"scala_plot_one.html")
+```
+
+### Superimposing multiple glyphs on one plot
+
+To superimpose two histograms booked and filled above on one plot, one create and configure a glyph for each of the histograms, and call the `plot()` method awhich ccepts variable length argument list, and therefore can take any number of glyphs.
+
+```scala
+val glyph_one = one.bokeh() //use default
+val glyph_two = two.bokeh(glyphType="histogram",fillColor=Color.Red) //customize
+val plot_both = plot(glyph_one,glyph_two)
+save(plot_both,"scala_plot_both.html")
+```
+
+### Plotting a stack of Histograms
+
+Here is an example of how to make a stacked plot of histograms one and two:
+
+```scala
+val s = Stack.build(one,two)
+val glyph_stack = s.bokeh() //use defaults
+val plot_stack = plot(glyph_stack)
+save(plot_stack,"scala_plot_stack.html")
+```
+
+
+## Plotting a Histogram in `spark-shell`
+
 This tutorial also uses the [CMS public dataset](scala-cmsdata) as sample data. Load the code on that page to get an `events` iterator, then do:
 
 ```scala
@@ -31,8 +105,6 @@ val dataset_rdd = sc.parallelize(events)
 ```
 
 to turn it into a Spark RDD. It may take about 20 seconds to transfer all the data to your Spark cluster.
-
-## Plotting a Histogram
 
 Following is an example of plotting a simple histogram with `scala-bokeh` in the interactive spark-shell (Spark context and SQL context are available as `sc` and `sqlContext`). Following assumes that `Bokeh` and `histogrammar` jars are included in the classpath:	
 
@@ -63,7 +135,7 @@ save(myfirstplot,"myfirstplot.html")
 
 The resulting plot is saved to an HTML file and can be viewed and interactively edited in a browser.
 
-#### Configuring Bokeh Glyph attributes
+### Configuring Bokeh Glyph attributes
 
 The above example uses default parameters and styles for the histograms plotted. A number of the attributes can be configured, including glyph type (line or a marker), marker style (e.g. circle, diamond shape), sizes and colors of glyphs. 
 Import Bokeh libraries to be able to configure glyph colors:
