@@ -86,10 +86,27 @@ save(plot_both,"scala_plot_both.html")
 
 ### Plotting a stack of Histograms
 
-Here is an example of how to make a stacked plot of histograms one and two:
+Here is an example of how to make a stacked plot of histograms. Let us generate more artificial data, different from one and two:
 
 ```scala
-val s = Stack.build(one,two)
+val extra = List(3.2, 3.2, -2.1, 1.0, 1.3, -3.4, 0.6, 0.0, -1.0, 1.7)
+```
+and book a third histogram:
+
+```scala
+val three = Histogram(5, -3, 7, {x: Double => x})
+```
+Note: only histograms with the same binning can be stacked!
+
+Now, fill it:
+```scala
+extra.foreach(three.fill(_))
+```
+
+
+Prepare a stacked histogram using a dedicated `build()` method, and plot it: 
+```scala
+val s = Stack.build(two,three)
 val glyph_stack = s.bokeh() //use defaults
 val plot_stack = plot(glyph_stack)
 save(plot_stack,"scala_plot_stack.html")
