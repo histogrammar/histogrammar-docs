@@ -12,7 +12,7 @@ This tutorial uses the Python version of Histogrammar. See the [installation gui
 
 It also uses the [CMS public dataset](../python-cmsdata). Set up an iterator named `events` in your console. You will need a network connection. If your `events` iterator ever runs out, refresh it with
 
-```scala
+```python
 events = EventIterator()
 ```
 
