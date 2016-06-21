@@ -30,29 +30,24 @@ hgwatch --help
 
 ```
 usage: hgwatch [-h] [-f FILE] [-c COMMAND] [-s ADDRESS:PORT] [-p COMMANDS]
-               [--ssh USER@HOST:PORT] [--ssh-key LOCAL-FILE] [--json] [--root]
+               [-i] [--json] [--root] [-v]
 
 Watch a file, pipe, or remote connection for Histogrammar JSON objects and
 perform some action on each (such as plotting).
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -f FILE               File or pipe to watch (default is "-", standard
-                        input).
-  -c COMMAND            Shell command(s) to run and watch; if a filename, use
-                        the contents of that file.
-  -s ADDRESS:PORT       Socket address and port to watch (separated by a
-                        colon).
-  -p COMMANDS           Python commands to run on each new histogram "hg"; if
-                        a filename, use the contents of that file (default is
-                        "print(hg)").
-  --ssh USER@HOST:PORT  Connect to remote host for -f and -c (no effect for -s
-                        or "-f -") with the paramiko library for ssh. Raises
-                        an exception if paramiko is not installed.
-  --ssh-key LOCAL-FILE  Identity for ssh (RSA or DSA private key file) or
-                        None.
-  --json                append -p with print-out of JSON.
-  --root                append -p with visualization in ROOT.
+  -h, --help       show this help message and exit
+  -f FILE          File or pipe to watch (default is "-", standard input).
+  -c COMMAND       Shell command(s) to run and watch; if a filename, use the
+                   contents of that file.
+  -s ADDRESS:PORT  Socket address and port to watch (separated by a colon).
+  -p COMMANDS      Python commands to run on each new histogram "hg"; if a
+                   filename, use the contents of that file.
+  -i               Start an interactive Python prompt with the watcher in a
+                   background thread.
+  --json           append -p with print-out of JSON.
+  --root           append -p with visualization in ROOT.
+  -v, --version    show program's version number and exit
 
 Only one of [-f, -c, -s] may be used. Each JSON object in the stream must be a
 separate line of text, and no action is performed until the input buffer
@@ -165,14 +160,62 @@ to see the full stack trace.
 
 Now let's handle a more complex case: producing plots in Scala and viewing them with Python's PyROOT.
 
+In the above examples, we opened the named pipe for writing (`cat > intermediate.json`) before reading (`hgwatch -f intermediate.json`). If you do it the other way around, `hgwatch` "hangs" until the writer starts. Let's do that.
 
-TODO
+```bash
+python scripts/hgwatch -f intermediate.json --root
+```
 
+The `--root` option sets up a set of commands that plot the data in ROOT. If you do not have ROOT on your system, this will fail. See `--help` for a list of available plotting front-ends: you can substitute another for this exercise.
+
+In the other terminal, start a Scala prompt with the Histogrammar JAR loaded (at least version 0.7):
+
+```bash
+scala -cp target/histogrammar-0.7.jar
+```
+
+Import the Histogrammar classes and make a histogram.
+
+```scala
+import org.dianahep.histogrammar._
+
+val b = Bin(100, -3, 3, {x: Unit => scala.util.Random.nextGaussian})
+```
+
+This one takes no input (Scala `()`, type `Unit`, which is `void` in Java) and fills with a random value. Now open a connection to the named pipe and dump the histogram into it.
+
+```scala
+val out = new JsonStream("intermediate.json")
+out.append(b)
+```
+
+That should cause Histogrammar Watch to pop up a window showing an empty histogram. Back on the Scala side, add some data:
+
+```scala
+b.fill(())
+b.fill(())
+b.fill(())
+out.append(b)
+```
+
+You should see this in the window.
+
+```scala
+for (i <- 0 until 1000)
+  b.fill(())
+out.append(b)
+
+// animation!
+for (i <- 0 until 1000) {
+  b.fill(())
+  out.append(b)
+}
+```
+
+It is as though you had an interactive ROOT window in Scala.
 
 ## Remote viewing
 
 Now let's handle a data transfer over the network. Histogrammar Watch has a `-s` option for monitoring a socket (IP address and port), but let's consider the more common case where you're not a system administrator and are not allowed to open ports.
 
-You can watch a file over ssh using the `--ssh` (and maybe `--ssh-key`) option.
 
-TODO
