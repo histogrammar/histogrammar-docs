@@ -1,5 +1,5 @@
 ---
-title: Histogrammar Watch (hgwatch)
+title: HistogrammarWatch (hgwatch)
 type: default
 toc: false
 summary: |
@@ -14,11 +14,11 @@ It uses artificial datasets because the focus is on data transfer, not data.
 
 ## Overview
 
-When you install the Python version of Histogrammar with `sudo python setup.py install`, it adds or overwrites an executable named `hgwatch`, or Histogrammar Watch.
+When you install the Python version of Histogrammar with `sudo python setup.py install`, it adds or overwrites an executable named `hgwatch`, also known as HistogrammarWatch.
 
-This executable watches a file, a UNIX pipe, a socket, or an ssh connection for lines of text containing the JSON of aggregated histograms. Whenever a new line appears, it runs a chosen set of commands that usually plot the histogram. This way, you can keep a local window open to work that you're doing remotely&mdash; either on a remote computer or in a different framework from the plotting framework.
+This executable watches a file, a UNIX pipe, a socket, or an ssh connection for lines of text containing the JSON of aggregated histograms. Whenever a new line appears, it runs a chosen set of commands that plot the histogram (or do something user-defined). This way, you can keep a local window open to work that you're doing remotely&mdash; either on a remote computer or in a different framework from the plotting framework.
 
-Histogrammar Watch doubles as a Python prompt, so that you can investigate your plot objects if anything looks wrong.
+HistogrammarWatch can also double as a Python prompt, so that you can investigate your plot objects if anything looks wrong.
 
 ### Help text
 
@@ -27,6 +27,8 @@ As a first step, verify that you have `hgwatch` and view its help text by typing
 ```bash
 hgwatch --help
 ```
+
+You should see
 
 ```
 usage: hgwatch [-h] [-f FILE] [-c COMMAND] [-s ADDRESS:PORT] [-p COMMANDS]
@@ -54,6 +56,8 @@ separate line of text, and no action is performed until the input buffer
 flushes with an end of line character ("\n").
 ```
 
+(Version 0.7; later versions may have more options.)
+
 ### Simple example
 
 Open two terminals in the same directory and type the following into one of them:
@@ -67,10 +71,10 @@ This starts writing to a file named `intermediate.json`, appending to the file e
 In the other terminal, type
 
 ```bash
-hgwatch -c 'tail -f intermediate.json' -p 'print(hg)'
+hgwatch -i -c 'tail -f intermediate.json' -p 'print(hg)'
 ```
 
-This opens a Python prompt with a background thread running `tail -f intermediate.json`. Go back to the first terminal and type
+This opens a Python prompt (`-i`) with a background thread running `tail -f intermediate.json`. Go back to the first terminal and type
 
 ```json
 {"type": "Count", "data": 123}
@@ -82,7 +86,7 @@ and press enter. This JSON represents one of the simplest aggregators possible: 
 <Count 123.0>
 ```
 
-every time you add one to the first terminal. If you don't, then you probably have a problem with buffers not flushing: don't worry about it until you try some of the other examples below (depending on the type of your operating system, one method may work while another doesn't).
+every time you add a line to the first terminal. If you don't (e.g. because you're using Python 3), then you probably have a problem with buffers not flushing: don't worry about it until you try some of the other examples below (depending on your system, one method may work while another doesn't).
 
 What's happening here is that `hgwatch` is running `print(hg)` for each `hg` object that it sees in `intermediate.json`. If instead of a simple count, we had a complex histogram, and instead of simply printing it, we plotted it, we would now have a pipeline from a process that can only produce text to another that can show you graphical visualizations of your data, on demand.
 
@@ -107,7 +111,7 @@ cat > intermediate.json
 Then in the other terminal, run
 
 ```bash
-hgwatch -f intermediate.json -p 'print(hg)'
+hgwatch -i -f intermediate.json -p 'print(hg)'
 ```
 
 Both the `cat` and `hgwatch -f` (f for file) are pretending that `intermediate.json` is a file, but if you made it with `mkfifo`, it's a pipe. Now when you add
@@ -126,7 +130,7 @@ in the other without touching disk. Python 3 is more likely to work in this mode
 
 ### Interacting with the data
 
-Histogrammar Watch applies a given set of commands to each new plot, which was `print(hg)` in our examples above. But it also gives you a Python prompt to do whatever you want. Hit the enter key a few times to get the traditional Python `>>>` prompt to show up (since the background thread may have obscured it) and do
+HistogrammarWatch applies a given set of commands to each new plot, which was `print(hg)` in our examples above. But if you pass the `-i` flag, it also gives you a Python prompt to do whatever you want. Hit the enter key a few times to get the traditional Python `>>>` prompt to show up (since the background thread may have obscured it) and do
 
 ```python
 hg.entries
@@ -138,9 +142,9 @@ or
 hg + hg
 ```
 
-to pull it apart. You have full control over this `hg` object, so you can inspect it if anything goes wrong. For instance, it might have a form that your plotting commands don't correctly handle; this can help you find out why and correct your plotting commands.
+to pull it apart or manipulate it. You have full control over this `hg` object, so you can inspect it if anything goes wrong. For instance, it might have a form that your plotting commands don't correctly handle; this can help you find out why and correct your plotting commands.
 
-If the processes that is emitting plots are not emitting the right format, you can look at this raw input with `hgin` (a string).
+If the processes that is emitting plots are not emitting the right format, you can look at this raw input with `hgin` (a string). For instance,
 
 ```python
 import json
@@ -160,10 +164,10 @@ to see the full stack trace.
 
 Now let's handle a more complex case: producing plots in Scala and viewing them with Python's PyROOT.
 
-In the above examples, we opened the named pipe for writing (`cat > intermediate.json`) before reading (`hgwatch -f intermediate.json`). If you do it the other way around, `hgwatch` "hangs" until the writer starts. Let's do that.
+In the above examples, we opened the named pipe for writing (`cat > intermediate.json`) before reading (`hgwatch -i -f intermediate.json`). If you do it the other way around, `hgwatch` "hangs" until the writer starts. Let's do that.
 
 ```bash
-python scripts/hgwatch -f intermediate.json --root
+python scripts/hgwatch -i -f intermediate.json --root
 ```
 
 The `--root` option sets up a set of commands that plot the data in ROOT. If you do not have ROOT on your system, this will fail. See `--help` for a list of available plotting front-ends: you can substitute another for this exercise.
@@ -185,11 +189,11 @@ val b = Bin(100, -3, 3, {x: Unit => scala.util.Random.nextGaussian})
 This one takes no input (Scala `()`, type `Unit`, which is `void` in Java) and fills with a random value. Now open a connection to the named pipe and dump the histogram into it.
 
 ```scala
-val out = new JsonStream("intermediate.json")
+val out = new JsonDump("intermediate.json")
 out.append(b)
 ```
 
-That should cause Histogrammar Watch to pop up a window showing an empty histogram. Back on the Scala side, add some data:
+That should cause HistogrammarWatch to pop up a window showing an empty histogram. Back on the Scala side, add some data:
 
 ```scala
 b.fill(())
@@ -212,10 +216,86 @@ for (i <- 0 until 1000) {
 }
 ```
 
-It is as though you had an interactive ROOT window in Scala.
+It is as though you had an interactive ROOT window in Scala, rather than Python.
 
-## Remote viewing
+## Remote plotting through ssh
 
-Now let's handle a data transfer over the network. Histogrammar Watch has a `-s` option for monitoring a socket (IP address and port), but let's consider the more common case where you're not a system administrator and are not allowed to open ports.
+Now let's handle a data transfer over the network. HistogrammarWatch has a `-s` option for monitoring a socket (IP address and port), which is useful if the remote computer has no firewall or you're allowed to open ports. Often, though, all you have is ssh, so let's consider that case first.
 
+Open two terminals, one on your local computer and the other on the remote site where you want to analyze data. The local computer will display plots with Python's PyROOT and the remote site will generate them in Scala. (Again, you can substitute the front-end and back-end if you find another more convenient; this tutorial only concerns the data flow.)
 
+On the remote computer, create a named pipe and start a Scala process with the Histogrammar JAR.
+
+```bash
+mkfifo intermediate.json
+scala -cp target/histogrammar-0.7.jar
+```
+
+On the local computer, start a HistogrammarWatch with ssh as its command:
+
+```bash
+hgwatch -i -c "ssh REMOTE -x cat intermediate.json --root"
+```
+
+where `REMOTE` is the address of the remote computer (and supply a user name, etc., if you need to). If your ssh prompts you with a password, you can't use the `-i` (interactive) option, since the Python input loop interferes with the password prompt.
+
+Now make a histogram and stream its output through `intermediate.json`, as before:
+
+```scala
+import org.dianahep.histogrammar._
+
+val b = Bin(100, -3, 3, {x: Unit => scala.util.Random.nextGaussian})
+
+val out = new JsonDump("intermediate.json")
+out.append(b)
+
+b.fill(())
+b.fill(())
+b.fill(())
+out.append(b)
+
+for (i <- 0 until 1000)
+  b.fill(())
+out.append(b)
+
+// animation!
+for (i <- 0 until 1000) {
+  b.fill(())
+  out.append(b)
+}
+```
+
+You should see a stream of histogram plots.
+
+### Multi-hop ssh
+
+That's fine for a single ssh connection, but some working environments are so locked down that you have to log into one machine just to log into another, where the actual analysis is performed. Almost the same solution can be used for that; you just need to set up your `~/.ssh/config`.
+
+If you don't already have a `~/.ssh/config` file, create an empty one. Then add
+
+```config
+Host StepA
+    Hostname StepA
+
+Host StepB
+    ProxyCommand ssh StepA -W %h:%p
+
+Host StepC
+    ProxyCommand ssh StepB -W %h:%p
+```
+
+for a connection from your local computer to `StepA`, from there to `StepB`, and from there to `StepC`, etc. Any number of steps can be chained this way.
+
+Now when you
+
+```bash
+hgwatch -i -c "ssh REMOTE -x cat intermediate.json --root"
+```
+
+use the final destination (`StepC` in the above example) as your `REMOTE`. If any of the steps require a password, you can't use the `-i` (interactive) option.
+
+If you're familiar with ssh configuration files, you can also add user names, custom ports, identity files (for passwordless ssh), etc.
+
+## Remote plotting through a socket
+
+**FIXME: not implemented.**
