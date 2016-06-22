@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="264"
+   height="108.2296"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="stack_venn.svg"
+   inkscape:export-filename="/home/pivarski/diana-github/histogrammar-docs/tutorials/python-pyroot/stack_venn.png"
+   inkscape:export-xdpi="102.00658"
+   inkscape:export-ydpi="102.00658">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.1356085"
+     inkscape:cx="290.53467"
+     inkscape:cy="2.1945633"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     inkscape:object-nodes="false"
+     fit-margin-top="10"
+     fit-margin-left="10"
+     fit-margin-right="10"
+     fit-margin-bottom="10"
+     inkscape:window-width="1360"
+     inkscape:window-height="715"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-27.99051,-411.73713)">
+    <g
+       id="g3867"
+       style="color:#000000;fill:#ff0000;fill-opacity:0.25098039000000000;fill-rule:nonzero;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate">
+      <path
+         transform="matrix(1,0,0,0.3953714,-80,255.37226)"
+         d="M 190,532.36218 C 190,548.93073 176.56854,562.36218 160,562.36218 C 143.43146,562.36218 130,548.93073 130,532.36218 C 130,515.79364 143.43146,502.36218 160,502.36218 C 176.56854,502.36218 190,515.79364 190,532.36218 z"
+         sodipodi:ry="30"
+         sodipodi:rx="30"
+         sodipodi:cy="532.36218"
+         sodipodi:cx="160"
+         id="path2995"
+         style="color:#000000;fill:#ff0000;fill-opacity:0.25098039000000000;fill-rule:nonzero;stroke:#000000;stroke-width:3.18073414;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         sodipodi:type="arc" />
+      <path
+         transform="matrix(1,0,0,0.3953714,-60,255.37226)"
+         sodipodi:type="arc"
+         style="color:#000000;fill:#ff0000;fill-opacity:0.25098039000000000;fill-rule:nonzero;stroke:#000000;stroke-width:3.18073414;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="path2997"
+         sodipodi:cx="160"
+         sodipodi:cy="532.36218"
+         sodipodi:rx="50"
+         sodipodi:ry="50"
+         d="M 210,532.36218 C 210,559.97642 187.61424,582.36218 160,582.36218 C 132.38576,582.36218 110,559.97642 110,532.36218 C 110,504.74795 132.38576,482.36218 160,482.36218 C 187.61424,482.36218 210,504.74795 210,532.36218 z" />
+      <path
+         transform="matrix(1,0,0,0.3953714,-40,255.37226)"
+         d="M 230,532.36218 C 230,571.02212 198.65993,602.36218 160,602.36218 C 121.34007,602.36218 90,571.02212 90,532.36218 C 90,493.70225 121.34007,462.36218 160,462.36218 C 198.65993,462.36218 230,493.70225 230,532.36218 z"
+         sodipodi:ry="70"
+         sodipodi:rx="70"
+         sodipodi:cy="532.36218"
+         sodipodi:cx="160"
+         id="path2999"
+         style="color:#000000;fill:#ff0000;fill-opacity:0.25098039000000000;fill-rule:nonzero;stroke:#000000;stroke-width:3.18073414;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         sodipodi:type="arc" />
+      <path
+         transform="matrix(1,0,0,0.3953714,-20,255.37226)"
+         sodipodi:type="arc"
+         style="color:#000000;fill:#ff0000;fill-opacity:0.25098039000000000;fill-rule:nonzero;stroke:#000000;stroke-width:3.18073414;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="path3001"
+         sodipodi:cx="160"
+         sodipodi:cy="532.36218"
+         sodipodi:rx="90"
+         sodipodi:ry="90"
+         d="M 250,532.36218 C 250,582.06781 209.70563,622.36218 160,622.36218 C 110.29437,622.36218 70,582.06781 70,532.36218 C 70,482.65656 110.29437,442.36218 160,442.36218 C 209.70563,442.36218 250,482.65656 250,532.36218 z" />
+      <path
+         transform="matrix(1,0,0,0.3953714,0,255.37226)"
+         d="M 270,532.36218 C 270,593.11351 220.75132,642.36218 160,642.36218 C 99.248678,642.36218 50,593.11351 50,532.36218 C 50,471.61086 99.248678,422.36218 160,422.36218 C 220.75132,422.36218 270,471.61086 270,532.36218 z"
+         sodipodi:ry="110"
+         sodipodi:rx="110"
+         sodipodi:cy="532.36218"
+         sodipodi:cx="160"
+         id="path3003"
+         style="color:#000000;fill:#ff0000;fill-opacity:0.25098039000000000;fill-rule:nonzero;stroke:#000000;stroke-width:3.18073414;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         sodipodi:type="arc" />
+    </g>
+  </g>
+</svg>

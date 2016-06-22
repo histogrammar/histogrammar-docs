@@ -24,7 +24,8 @@ class LorentzVector(object):
     def eta(self):
         return 0.5*math.log((self.p + self.pz)/(self.p - self.pz))
     @property
-    def phi(self): math.atan2(self.py, self.px)
+    def phi(self):
+        return math.atan2(self.py, self.px)
     def __add__(self, other):
         out = LorentzVector()
         out.px = self.px + other.px
