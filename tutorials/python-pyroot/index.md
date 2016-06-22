@@ -624,7 +624,7 @@ box_and_whiskers =
                Maximize(metpt)))
 ```
 
-Although ROOT does not have a way to draw it (as far as I know), this is known as a [box-and-whikers plot](http://en.wikipedia.org/wiki/Box_plot) and is used in place of a profile plot.
+This is known as a [box-and-whikers plot](http://en.wikipedia.org/wiki/Box_plot) in R and a candle plot in ROOT. It is used in place of a profile plot if the contents of each bin are general distributions, rather than roughly Gaussian.
 
 Or maybe you want to make a residuals plot with ordinary least squares and mean absolute errors for comparison:
 
