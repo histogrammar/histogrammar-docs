@@ -93,15 +93,16 @@ Happy histogramming!
     
 ## **Count:** sum of weights
 
-Count entries by accumulating the sum of all observed weights.
+Count entries by accumulating the sum of all observed weights or a sum of transformed weights (e.g. sum of squares of weights).
 
 ### Counting constructor and required members
 
 ```python
-Count.ing()
+Count.ing(transform=identity)
 ```
 
   * `entries` (mutable double) is the number of entries, initially 0.0.
+  * `transform` (function from double to double) transforms each weight.
 
 ### Counted constructor and required members
 
@@ -114,9 +115,11 @@ Count.ed(entries)
 ### Fill and combine algorithms
 
 ```python
+identity = lambda x: x
+
 def fill(counting, datum, weight):
     if weight > 0.0:
-        counting.entries += weight
+        counting.entries += self.transform(weight)
 
 def combine(one, two):
     return Count.ed(one.entries + two.entries)
@@ -1278,7 +1281,18 @@ Fraction.ed(entries, numerator, denominator)
   * `numerator` (past-tense aggregator) is the filled numerator.
   * `denominator` (past-tense aggregator) is the filled denominator.
 
-### Fill and combine algorithms
+### Fractioned alternate constructor
+
+```python
+Fraction.build(numerator, denominator)
+```
+
+  * `numerator` (past-tense aggregator) is the filled numerator.
+  * `denominator` (past-tense aggregator) is the filled denominator.
+
+This constructor will make a past-tense Fraction object that can be used to represent any ratio, not just a fraction. The numerator and denominator may come from different sources, but they must have compatible binning.
+
+### Fill, combine, and alternate constructor algorithms
 
 ```python
 def fill(fractioning, datum, weight):
@@ -1294,6 +1308,9 @@ def combine(one, two):
     numerator = combine(one.numerator, two.numerator)
     denominator = combine(one.denominator, two.denominator)
     return Fraction.ed(entries, numerator, denominator)
+
+def build(numerator, denominator):
+    return Fraction.ed(denominator.entries, numerator, denominator)
 ```
 
 ### JSON format
