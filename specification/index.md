@@ -2151,6 +2151,7 @@ JSON object containing
 
   * `entries` (JSON number, "nan", "inf", or "-inf")
   * `values` (JSON array of JSON objects containing `w` (JSON number), the total weight of entries for a unique value and `v` (JSON number, array of numbers, or string), the value), which should be sorted by `v` (lexicographically)
+  * optional `name` (JSON string), name of the `quantity` function, if provided.
 
 **Examples:**
 
@@ -2207,29 +2208,40 @@ Although the user-defined function may return scalar numbers, fixed-dimension ve
 ### Sampling constructor and required members
 
 ```python
-Sample.ing(limit, quantity)
+Sample.ing(limit, quantity, randomSeed=None)
 ```
 
   * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
   * `quantity` (function returning a double, a vector of doubles, or a string) computes the quantity of interest from the data.
+  * `randomSeed` (long integer or None) an optional random seed to make the sampling deterministic.
   * `entries` (mutable double) is the number of entries, initially 0.0.
   * `values` (mutable, sorted list of quantity return type, double, double triplets) is the set of collected values with their weights and a random number (see algorithm below). Its size is at most `limit` and it may contain duplicates.
+  * `randomGenerator` (random generator state or None) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampling instances.
 
 ### Sampled constructor and required members
 
 ```python
-Sample.ed(entries, limit, values)
+Sample.ed(entries, limit, values, randomSeed=None)
 ```
 
   * `entries` (double) is the number of entries.
   * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
   * `values` (sorted list of quantity return type, double, double pairs) is the set of collected values with their weights. Its size is at most `limit` and it may contain duplicates.
+  * `randomSeed` (long integer or None) an optional random seed to make the sampling deterministic.
+  * `randomGenerator` (random generator state or None) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampled instances.
 
 ### Fill and combine algorithms
 
 ```python
-def merge(values, datum, weight, limit):
-    r = random.uniform(0.0, 1.0)**(1.0/weight)
+import random
+MIN_LONG = -2**63
+MAX_LONG = 2**63 - 1
+
+def merge(values, datum, weight, limit, randomGenerator):
+    if randomGenerator is None:
+        r = random.uniform(0.0, 1.0)**(1.0/weight)
+    else:
+        r = randomGenerator.uniform(0.0, 1.0)**(1.0/weight)
     if len(values) < limit:
         values.append((r, datum, weight))
         values.sort()
@@ -2239,19 +2251,38 @@ def merge(values, datum, weight, limit):
         del values[0]
 
 def fill(sampling, datum, weight):
-    merge(sampling.values, datum, weight, sampling.limit)
+    merge(sampling.values, datum, weight, sampling.limit, sampling.randomGenerator)
     sampling.entries += weight
 
 def combine(one, two):
     if one.limit != two.limit:
         raise Exception
     entries = one.entries + two.entries
+
+    # make an independent random generator state for the new Sampled instance
+    if one.randomGenerator is not None and two.randomGenerator is not None:
+        # mix the two generator states (not uniformly distributed)
+        newSeed = one.randomGenerator.randint(MIN_LONG, MAX_LONG) + \
+                  two.randomGenerator.randint(MIN_LONG, MAX_LONG)
+        # simulate 64-bit wrap-around arithmetic
+        if newSeed > MAX_LONG:
+            newSeed -= MAX_LONG - MIN_LONG
+        if newSeed < MIN_LONG:
+            newSeed += MAX_LONG - MIN_LONG
+        newGenerator = random.Random(newSeed)
+    elif one.randomGenerator is not None:
+        newGenerator = random.Random(one.randomGenerator.randint(MIN_LONG, MAX_LONG))
+    elif two.randomGenerator is not None:
+        newGenerator = random.Random(two.randomGenerator.randint(MIN_LONG, MAX_LONG))
+    else:
+        newGenerator = None
+
     values = []
     for r, datum, weight in one.values:
-        merge(values, datum, weight, one.limit)
+        merge(values, datum, weight, one.limit, newGenerator)
     for r, datum, weight in two.values:
-        merge(values, datum, weight, one.limit)
-    return Sample.ed(entries, one.limit, [(d, w) for r, d, w in values])
+        merge(values, datum, weight, one.limit, newGenerator)
+    return Sample.ed(entries, one.limit, [(d, w) for r, d, w in values], newGenerator)
 ```
 
 ### JSON format
@@ -2261,6 +2292,8 @@ JSON object containing
   * `entries` (JSON number, "nan", "inf", or "-inf")
   * `limit` (JSON number, must be an integer)
   * `values` (JSON array of JSON objects containing `w` (JSON number), the weight of a value and `v` (JSON number, array of numbers, or string), the value), which should be sorted by `v` (lexicographically)
+  * optional `name` (JSON string), name of the `quantity` function, if provided.
+  * optional `seed` (JSON number, must be a 64-bit integer), random number seed derived from the `randomGenerator`, if present. (This is not the `randomSeed` of the Sampling/Sampled instance constructor, but a new one deterministically derived from it.)
 
 **Examples:**
 
