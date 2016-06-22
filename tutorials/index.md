@@ -24,7 +24,7 @@ These first few contain instructions common to most of the other tutorials below
 
 ### Scala
 
-  * {% include progress.html complete=30 %} [Making Bokeh plots](scala-bokeh): How to send Histogrammar data to the [Bokeh plotting package in Scala](http://github.com/bokeh/bokeh-scala).
+  * {% include progress.html complete=80 %} [Making Bokeh plots in Spark](scala-spark-bokeh): How to aggregate [Apache Spark](http://spark.apache.org/) data in Histogrammar and send it to the [Bokeh plotting package in Scala](http://github.com/bokeh/bokeh-scala).
 
 ### Python
 
