@@ -2150,7 +2150,7 @@ def combine(one, two):
 JSON object containing
 
   * `entries` (JSON number, "nan", "inf", or "-inf")
-  * `values` (JSON array of JSON objects containing `w` (JSON number), the total weight of entries for a unique value and `v` (JSON number, array of numbers, or string), the value), which should be sorted by `v` (lexicographically)
+  * `values` (JSON array of JSON objects containing `w` (JSON number), the total weight of entries for a unique value and `v` (JSON number, array of numbers, or string), the value); canonical form is sorted by `v` (lexicographically)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
 **Examples:**
@@ -2215,7 +2215,7 @@ Sample.ing(limit, quantity, randomSeed=None)
   * `quantity` (function returning a double, a vector of doubles, or a string) computes the quantity of interest from the data.
   * `randomSeed` (long integer or None) an optional random seed to make the sampling deterministic.
   * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `values` (mutable, sorted list of quantity return type, double, double triplets) is the set of collected values with their weights and a random number (see algorithm below). Its size is at most `limit` and it may contain duplicates.
+  * `values` (mutable, list of quantity return type, double, double triplets) is the set of collected values with their weights and a random number (see algorithm below), sorted by the random number. Its size is at most `limit` and it may contain duplicates.
   * `randomGenerator` (random generator state or None) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampling instances.
 
 ### Sampled constructor and required members
@@ -2226,7 +2226,7 @@ Sample.ed(entries, limit, values, randomSeed=None)
 
   * `entries` (double) is the number of entries.
   * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
-  * `values` (sorted list of quantity return type, double, double pairs) is the set of collected values with their weights. Its size is at most `limit` and it may contain duplicates.
+  * `values` (list of quantity return type, double, double triples) is the set of collected values with their weights. Its size is at most `limit` and it may contain duplicates.
   * `randomSeed` (long integer or None) an optional random seed to make the sampling deterministic.
   * `randomGenerator` (random generator state or None) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampled instances.
 
