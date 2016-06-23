@@ -10,7 +10,7 @@ summary: |
 
 The examples on this page have been tested with Histogrammar 0.7. Any subsequent version should work. See the [Installation instructions](../install) if you need to install it.
 
-## Plotting a Histogram in `Scala`
+## Plotting a Histogram in `Python`
 
 The examples of plotting histograms with `python-bokeh` presented in this section use `Python` and artificial data.
 In the Python or PySpark REPL, start by importing the Histogrammar package and the plotting library:
