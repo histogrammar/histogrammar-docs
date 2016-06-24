@@ -27,8 +27,8 @@ topnav_dropdowns:
     - title: References
       folderitems:
         - title: Scala (Scaladoc)
-          external_url: http://histogrammar.org/scala/latest/index.html#org.dianahep.histogrammar.package
-        - title: Python (Sphynx)
-          external_url: http://amiconnectedtotheinternet.com
+          external_url: http://histogrammar.org/scala/latest/#org.dianahep.histogrammar.package
+        - title: Python (Sphinx)
+          external_url: http://histogrammar.org/python/latest/
         - title: C++ (Doxygen)
           external_url: http://amiconnectedtotheinternet.com

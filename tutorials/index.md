@@ -6,7 +6,7 @@ toc: false
 
 These first few contain instructions common to most of the other tutorials below.
 
-  * {% include progress.html complete=100 %} [Installation](../install): The first step.
+  * {% include progress.html complete=100 %} [Installation](../install): Always the first step.
   * {% include progress.html complete=100 %} [CMS public dataset in Scala](scala-cmsdata): Sample data for plots.
   * {% include progress.html complete=100 %} [CMS public dataset in Python](python-cmsdata): The same sample data, accessed in Python.
 
@@ -18,25 +18,25 @@ These first few contain instructions common to most of the other tutorials below
 
 ### Python
 
-  * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar with [Matplotlib](http://matplotlib.org/), the most popular Python plotting library, and no custom back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
+  * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar with Matplotlib, the most popular Python plotting library, and no custom back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
 
 ## Plotting front-ends
 
 ### Scala
 
-  * {% include progress.html complete=80 %} [Making Bokeh plots in Spark](scala-spark-bokeh): How to aggregate [Apache Spark](http://spark.apache.org/) data in Histogrammar and send it to the [Bokeh plotting package in Scala](http://github.com/bokeh/bokeh-scala).
+  * {% include progress.html complete=100 %} [Making Bokeh plots in Spark](scala-spark-bokeh): How to aggregate Apache Spark data in Histogrammar and send it to the Bokeh plotting package in Scala.
 
 ### Python
 
-  * {% include progress.html complete=0 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the [Bokeh plotting package in Python](http://bokeh.pydata.org/en/latest/).
-  * {% include progress.html complete=100 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the [ROOT analysis package in Python](http://root.cern.ch/).
+  * {% include progress.html complete=0 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the Bokeh plotting package in Python.
+  * {% include progress.html complete=100 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the ROOT analysis package in Python.
 
 ## Aggregation back-ends
 
 ### Scala
 
-  * {% include progress.html complete=0 %} [Collecting data in Spark](scala-spark): How to use your [Apache Spark](http://spark.apache.org/) cluster to make histograms, rather than downloading the data and plotting locally.
-  * {% include progress.html complete=0 %} [Enhancements for SparkSQL](scala-sparksql): Special bindings to make histograms directly from [Apache SparkSQL](http://spark.apache.org/sql/) tables.
+  * {% include progress.html complete=0 %} [Collecting data in Spark](scala-spark): How to use your Apache Spark cluster to make histograms, rather than downloading the data and plotting locally.
+  * {% include progress.html complete=0 %} [Enhancements for SparkSQL](scala-sparksql): Special bindings to make histograms directly from Apache SparkSQL tables.
   * {% include progress.html complete=0 %} [Just-in-time compilation in Scala](scala-jit): How to make your aggregations on local data faster.
 
 ### Python
