@@ -95,14 +95,16 @@ Happy histogramming!
 
 Count entries by accumulating the sum of all observed weights or a sum of transformed weights (e.g. sum of squares of weights).
 
+An optional `transform` function can be applied to the weights before summing. To accumulate the sum of squares of weights, use `lambda x: x**2`, for instance. This is unlike any other primitive's `quantity` function in that its domain is the _weights_ (always double), not _data_ (any type).
+
 ### Counting constructor and required members
 
 ```python
 Count.ing(transform=identity)
 ```
 
-  * `entries` (mutable double) is the number of entries, initially 0.0.
   * `transform` (function from double to double) transforms each weight.
+  * `entries` (mutable double) is the number of entries, initially 0.0.
 
 ### Counted constructor and required members
 
@@ -140,6 +142,8 @@ Simply a JSON number (or JSON string "nan", "inf", "-inf" for non-finite values)
 ## **Sum:** sum of a given quantity
 
 Accumulate the (weighted) sum of a given quantity, calculated from the data.
+
+Sum differs from [Count](#count-sum-of-weights) in that it computes a quantity on the spot, rather than percolating a product of weight metadata from nested primitives. Also unlike weights, the sum can add both positive and negative quantities (weights are always non-negative).
 
 ### Summing constructor and required members
 
@@ -516,7 +520,7 @@ Estimate a quantile, such as 0.5 for median, (0.25, 0.75) for quartiles, or (0.2
 
 The quantile aggregator dynamically minimizes the mean absolute error between the current estimate and the target quantile, with a learning rate that depends on the cumulative deviations. The algorithm is deterministic: the same data always yields the same final estimate.
 
-This statistic has the best accuracy for quantiles near the middle of the distribution, such as the median (0.5), and the worst accuracy for quantiles near the edges, such as the first or last percentile (0.01 or 0.99). Use the specialized aggregators for the [Minimum](#minimize-minimum-value) (0.0) or [Maximum](#maximize-maximum-value) (1.0) of a distribution, since those aggregators are exact.
+This statistic has the best accuracy for quantiles near the middle of the distribution, such as the median (0.5), and the worst accuracy for quantiles near the edges, such as the first or last percentile (0.01 or 0.99). Use the specialized aggregators for the [Minimize](#minimize-minimum-value) (0.0) or [Maximize](#maximize-maximum-value) (1.0) of a distribution, since those aggregators are exact.
 
 Another alternative is to use [AdaptivelyBin](#adaptivelybin-for-unknown-distributions) to histogram the distribution and then estimate quantiles from the histogram bins. AdaptivelyBin with `tailDetail == 1.0` maximizes detail on the tails of the distribution (Yael Ben-Haim and Elad Tom-Tov's original algorithm), providing the best estimates of extreme quantiles like 0.01 and 0.99.
 
@@ -1026,7 +1030,7 @@ AdaptivelyBin.ing(quantity, num=100, tailDetail=0.2, value=Count.ing(), nanflow=
   * `value` (present-tense aggregator) generates sub-aggregators to put in each bin.
   * `nanflow` (present-tense aggregator) is a sub-aggregator to use for data whose quantity is NaN.
   * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `bins` (mutable list of double, present-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](http://127.0.0.1:4005/docs/specification/#centrallybin-irregular-but-fully-partitioning).
+  * `bins` (mutable list of double, present-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](#centrallybin-irregular-but-fully-partitioning).
   * `min` (mutable double) is the lowest value of the quantity observed, initially NaN.
   * `max` (mutable double) is the highest value of the quantity observed, initially NaN.
 
@@ -1040,7 +1044,7 @@ AdaptivelyBin.ed(entries, num, tailDetail, contentType, bins, min, max, nanflow)
   * `num` (32-bit integer) specifies the maximum number of bins before merging.
   * `tailDetail` (double) is a value between 0.0 and 1.0 (inclusive) for choosing the pair of bins to merge (see above).
   * `contentType` (string) is the value's sub-aggregator type (must be provided to determine type for the case when `bins` is empty).
-  * `bins` (list of double, past-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](http://127.0.0.1:4005/docs/specification/#centrallybin-irregular-but-fully-partitioning).
+  * `bins` (list of double, past-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](#centrallybin-irregular-but-fully-partitioning).
   * `min` (double) is the lowest value of the quantity observed or NaN if no data were observed.
   * `max` (double) is the highest value of the quantity observed or NaN if no data were observed.
   * `nanflow` (past-tense aggregator) is the filled nanflow bin.
@@ -1707,7 +1711,7 @@ Limit.ed(entries, limit, contentType, value)
   * `entries` (double) is the number of entries.
   * `limit` (double) is the maximum number of entries (inclusive).
   * `contentType` (string) is the value's sub-aggregator type (must be provided to determine type for the case when `value` has been deleted).
-  * `value` (past-tense aggregator or null) is the filled sub-aggregator if unsaturated, null if saturated.
+  * `value` (past-tense aggregator or `None`) is the filled sub-aggregator if unsaturated, `None` if saturated.
 
 ### Fill and combine algorithms
 
@@ -2213,10 +2217,10 @@ Sample.ing(limit, quantity, randomSeed=None)
 
   * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
   * `quantity` (function returning a double, a vector of doubles, or a string) computes the quantity of interest from the data.
-  * `randomSeed` (long integer or None) an optional random seed to make the sampling deterministic.
+  * `randomSeed` (long integer or `None`) an optional random seed to make the sampling deterministic.
   * `entries` (mutable double) is the number of entries, initially 0.0.
   * `values` (mutable, list of quantity return type, double, double triplets) is the set of collected values with their weights and a random number (see algorithm below), sorted by the random number. Its size is at most `limit` and it may contain duplicates.
-  * `randomGenerator` (random generator state or None) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampling instances.
+  * `randomGenerator` (random generator state or `None`) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampling instances.
 
 ### Sampled constructor and required members
 
@@ -2227,8 +2231,8 @@ Sample.ed(entries, limit, values, randomSeed=None)
   * `entries` (double) is the number of entries.
   * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
   * `values` (list of quantity return type, double, double triples) is the set of collected values with their weights. Its size is at most `limit` and it may contain duplicates.
-  * `randomSeed` (long integer or None) an optional random seed to make the sampling deterministic.
-  * `randomGenerator` (random generator state or None) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampled instances.
+  * `randomSeed` (long integer or `None`) an optional random seed to make the sampling deterministic.
+  * `randomGenerator` (random generator state or `None`) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampled instances.
 
 ### Fill and combine algorithms
 
