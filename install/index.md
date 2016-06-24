@@ -82,7 +82,7 @@ To use Histogrammar in a C++ project, add:
 
 to your compiler options and
 
-```c++
+```cpp
 #include "histogrammar.hpp"
 ```
 
@@ -138,7 +138,7 @@ To use Histogrammar in a C++ project, add:
 ```
 to your compiler options and
 
-```c++
+```c
 #include "histogrammar.hpp"
 ```
 in your code.
