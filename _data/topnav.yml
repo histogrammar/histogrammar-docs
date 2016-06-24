@@ -1,10 +1,10 @@
 ## Topnav single links
 ## if you want to list an external url, use external_url instead of url. the theme will apply a different link base.
 topnav:
-- title: Introduction
+- title: Installation
   items:
-    - title: Introduction
-      url: /introduction/
+    - title: Installation
+      url: /install/
 - title: Tutorials
   items:
     - title: Tutorials
@@ -30,5 +30,5 @@ topnav_dropdowns:
           external_url: http://histogrammar.org/scala/latest/#org.dianahep.histogrammar.package
         - title: Python (Sphinx)
           external_url: http://histogrammar.org/python/latest/
-        - title: C++ (Doxygen)
-          external_url: http://amiconnectedtotheinternet.com
+        # - title: C++ (Doxygen)
+        #   external_url: http://amiconnectedtotheinternet.com
