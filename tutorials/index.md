@@ -8,8 +8,6 @@ toc: false
 
 ## Basics
 
-  * [Installation](../install): Always the first step. This page is subdivided by project, so you can install as little or as much as you need (e.g. Python but no Scala, etc.).
-
 ### Scala
 
   * [Basic use in Scala](scala-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
