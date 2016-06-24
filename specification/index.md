@@ -95,6 +95,8 @@ Happy histogramming!
 
 Count entries by accumulating the sum of all observed weights or a sum of transformed weights (e.g. sum of squares of weights).
 
+An optional `transform` function can be applied to the weights before summing. To accumulate the sum of squares of weights, use `lambda x: x**2`, for instance. This is unlike any other primitive's `quantity` function in that its domain is the _weights_ (always double), not _data_ (any type).
+
 ### Counting constructor and required members
 
 ```python
@@ -140,6 +142,8 @@ Simply a JSON number (or JSON string "nan", "inf", "-inf" for non-finite values)
 ## **Sum:** sum of a given quantity
 
 Accumulate the (weighted) sum of a given quantity, calculated from the data.
+
+Sum differs from [Count](#count-sum-of-weights) in that it computes a quantity on the spot, rather than percolating a product of weight metadata from nested primitives. Also unlike weights, the sum can add both positive and negative quantities (weights are always non-negative).
 
 ### Summing constructor and required members
 
@@ -516,7 +520,7 @@ Estimate a quantile, such as 0.5 for median, (0.25, 0.75) for quartiles, or (0.2
 
 The quantile aggregator dynamically minimizes the mean absolute error between the current estimate and the target quantile, with a learning rate that depends on the cumulative deviations. The algorithm is deterministic: the same data always yields the same final estimate.
 
-This statistic has the best accuracy for quantiles near the middle of the distribution, such as the median (0.5), and the worst accuracy for quantiles near the edges, such as the first or last percentile (0.01 or 0.99). Use the specialized aggregators for the [Minimum](#minimize-minimum-value) (0.0) or [Maximum](#maximize-maximum-value) (1.0) of a distribution, since those aggregators are exact.
+This statistic has the best accuracy for quantiles near the middle of the distribution, such as the median (0.5), and the worst accuracy for quantiles near the edges, such as the first or last percentile (0.01 or 0.99). Use the specialized aggregators for the [Minimize](#minimize-minimum-value) (0.0) or [Maximize](#maximize-maximum-value) (1.0) of a distribution, since those aggregators are exact.
 
 Another alternative is to use [AdaptivelyBin](#adaptivelybin-for-unknown-distributions) to histogram the distribution and then estimate quantiles from the histogram bins. AdaptivelyBin with `tailDetail == 1.0` maximizes detail on the tails of the distribution (Yael Ben-Haim and Elad Tom-Tov's original algorithm), providing the best estimates of extreme quantiles like 0.01 and 0.99.
 
