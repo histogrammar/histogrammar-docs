@@ -103,8 +103,8 @@ An optional `transform` function can be applied to the weights before summing. T
 Count.ing(transform=identity)
 ```
 
-  * `entries` (mutable double) is the number of entries, initially 0.0.
   * `transform` (function from double to double) transforms each weight.
+  * `entries` (mutable double) is the number of entries, initially 0.0.
 
 ### Counted constructor and required members
 
@@ -1030,7 +1030,7 @@ AdaptivelyBin.ing(quantity, num=100, tailDetail=0.2, value=Count.ing(), nanflow=
   * `value` (present-tense aggregator) generates sub-aggregators to put in each bin.
   * `nanflow` (present-tense aggregator) is a sub-aggregator to use for data whose quantity is NaN.
   * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `bins` (mutable list of double, present-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](http://127.0.0.1:4005/docs/specification/#centrallybin-irregular-but-fully-partitioning).
+  * `bins` (mutable list of double, present-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](#centrallybin-irregular-but-fully-partitioning).
   * `min` (mutable double) is the lowest value of the quantity observed, initially NaN.
   * `max` (mutable double) is the highest value of the quantity observed, initially NaN.
 
@@ -1044,7 +1044,7 @@ AdaptivelyBin.ed(entries, num, tailDetail, contentType, bins, min, max, nanflow)
   * `num` (32-bit integer) specifies the maximum number of bins before merging.
   * `tailDetail` (double) is a value between 0.0 and 1.0 (inclusive) for choosing the pair of bins to merge (see above).
   * `contentType` (string) is the value's sub-aggregator type (must be provided to determine type for the case when `bins` is empty).
-  * `bins` (list of double, past-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](http://127.0.0.1:4005/docs/specification/#centrallybin-irregular-but-fully-partitioning).
+  * `bins` (list of double, past-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](#centrallybin-irregular-but-fully-partitioning).
   * `min` (double) is the lowest value of the quantity observed or NaN if no data were observed.
   * `max` (double) is the highest value of the quantity observed or NaN if no data were observed.
   * `nanflow` (past-tense aggregator) is the filled nanflow bin.
@@ -1711,7 +1711,7 @@ Limit.ed(entries, limit, contentType, value)
   * `entries` (double) is the number of entries.
   * `limit` (double) is the maximum number of entries (inclusive).
   * `contentType` (string) is the value's sub-aggregator type (must be provided to determine type for the case when `value` has been deleted).
-  * `value` (past-tense aggregator or null) is the filled sub-aggregator if unsaturated, null if saturated.
+  * `value` (past-tense aggregator or `None`) is the filled sub-aggregator if unsaturated, `None` if saturated.
 
 ### Fill and combine algorithms
 
@@ -2217,10 +2217,10 @@ Sample.ing(limit, quantity, randomSeed=None)
 
   * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
   * `quantity` (function returning a double, a vector of doubles, or a string) computes the quantity of interest from the data.
-  * `randomSeed` (long integer or None) an optional random seed to make the sampling deterministic.
+  * `randomSeed` (long integer or `None`) an optional random seed to make the sampling deterministic.
   * `entries` (mutable double) is the number of entries, initially 0.0.
   * `values` (mutable, list of quantity return type, double, double triplets) is the set of collected values with their weights and a random number (see algorithm below), sorted by the random number. Its size is at most `limit` and it may contain duplicates.
-  * `randomGenerator` (random generator state or None) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampling instances.
+  * `randomGenerator` (random generator state or `None`) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampling instances.
 
 ### Sampled constructor and required members
 
@@ -2231,8 +2231,8 @@ Sample.ed(entries, limit, values, randomSeed=None)
   * `entries` (double) is the number of entries.
   * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
   * `values` (list of quantity return type, double, double triples) is the set of collected values with their weights. Its size is at most `limit` and it may contain duplicates.
-  * `randomSeed` (long integer or None) an optional random seed to make the sampling deterministic.
-  * `randomGenerator` (random generator state or None) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampled instances.
+  * `randomSeed` (long integer or `None`) an optional random seed to make the sampling deterministic.
+  * `randomGenerator` (random generator state or `None`) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampled instances.
 
 ### Fill and combine algorithms
 
