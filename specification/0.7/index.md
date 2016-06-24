@@ -1,13 +1,11 @@
 ---
-title: Specification 0.8-prerelease
+title: Specification 0.7
 type: default
 toc: true
 summary: |
     <p>This page describes Histogrammar in detail, but without reference to any particular implementation, including the composable primitives, their required functions and argument lists, and their JSON representations.</p>
     
     <p>This is the normative specification; any implementations that don't adhere to the definitions on this page should be corrected.</p>
-
-    <p>Previous versions: <a href="0.7">0.7</a></p>
 ---
 
 # General features
