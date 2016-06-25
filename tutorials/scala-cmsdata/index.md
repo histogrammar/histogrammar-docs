@@ -20,7 +20,7 @@ scala -cp histogrammar-0.7.jar
 
 for an appropriate version of Histogrammar to get a `scala>` prompt. Then _either_
 
-  * enter paste mode by typing `:paste`, copy-paste the code into your terminal, and hit ctrl-D to exit paste mode, _or_
+  * copy-paste the code into your terminal (watching for possible error messages), _or_
   * download the raw code and type `:load /path/to/scala-cmsdata.scala` to load it.
 
 If all goes well, you'll have an iterator named `events` that pulls data from the web as needed. You get events by repeatedly calling `events.next()`. To restart the iterator from the beginning, do `val events = EventIterator()`.
