@@ -1,5 +1,5 @@
 ---
-title: 
+title: Collecting data in Spark
 type: default
 toc: false
 ---
