@@ -327,3 +327,130 @@ nanflow       0        |                                                        
 ## Fluent Spark
 
 All of the examples so far have presented attributes of the whole physics event: MET and number of primary vertices. This was to avoid complex Spark manipulations when the focus of the discussion was on histogramming. In this last section, I'll show some Spark idioms that can be useful in physics analyses.
+
+First, pull down one element for experimentation.
+
+```scala
+val Array(event) = rdd.take(1)
+```
+
+(The left-hand-side is a trick to get just the event, rather than a one-element array containing it. What comes after the `val` can be a [Scala Pattern](http://docs.scala-lang.org/tutorials/tour/pattern-matching.html) with new variables as elements of the pattern, like a regular expression. The above is similar to regex-matching `/beginning (.*) end/` to extract text between `beginning` and `end`.)
+
+Now type `event.` and the tab key for tab-completion.
+
+```
+asInstanceOf         canEqual             copy                 electrons            
+isInstanceOf         jets                 met                  muons                
+numPrimaryVertices   photons              productArity         productElement       
+productIterator      productPrefix        toString             
+```
+
+Some of these completions are standard Java and Scala stuff (`toString` and `asInstanceOf`, respectively), but others are physics-related:
+
+   * `numPrimaryVertices`, which we have seen
+   * `met`, which we have seen
+   * `muons`
+   * `electrons`
+   * `jets`
+   * `photons`
+
+You can tab-complete after `event.met.` and see some physics-relevant quantities (`px`, `py`, `pt`), but if you try `event.muons.` you see a _lot_ of Scala stuff. That's because `muons`, `electrons`, `jets`, and `photons` are Scala `Lists`. Due to some imperfection in the tab-completer, you can't get any deeper information than this unless you assign a new variable:
+
+```scala
+val firstMuon = event.muons(0)
+```
+
+and `firstMuon.`-tab. Obviously, that will fail if there are no muons in this event.
+
+### Scala lists
+
+Scala lists have [a lot of operations](http://www.scala-lang.org/api/2.10.5/#scala.collection.immutable.List), but here are the ones you should know:
+
+   * parentheses: get element by index
+   * `list1 ++ list2`: concatenate
+   * `elem +: list`: prepend element
+   * `list :+ elem`: append element
+   * `list.size`: length of list
+   * `list contains elem`: true iff `elem` is a member of `list`
+   * `exists(func)`: true if `func` returns true for _any_ element in `list` (&exist;)
+   * `forall(func)`: true if `func` returns true for _all_ elements in `list` (&forall;)
+   * `max`, `min`, `sorted`: get the maximum, minimum, or a sorted version of the list
+   * `maxBy(func)`, `minBy(func)`, `sortBy(func)` where `func` returns a number: sort by the return values of the function
+   * `filter(func)`: get a list of only elements returning true from `func`
+   * `map(func)`: get a list of `func` applied to each element individually.
+
+You can write traditional for loops:
+
+```scala
+for (muon <- events.muons if (muon.pt > 20)) {
+  println(muon.eta)
+}
+```
+
+though Scala rewrites them in terms of the functors above.
+
+Also, be aware that there is a huge variety of Scala list types, only one of which is named `List` (linked lists). You're likely to encounter `Array` (native Java array), `Vector` (immutable container with the same performance for accessing any element, unlike linked lists), `ListBuffer` (mutable list), and `Seq` (superclass of all of them). If the type-checker says that you can't call something a `List` because all it knows is that it's a `Seq`, just change your code to say `Seq.
+
+### Spark functors
+
+Spark has [a lot of operations](http://spark.apache.org/docs/latest/programming-guide.html#transformations) to perform on RDDs, but here are the ones you should know:
+
+   * `filter(func)`: pass Spark a function returning `Boolean` and it will give you a filtered dataset.
+   * `map(func)`: pass a function from `Event` to anything else and you'll get a dataset of anything else.
+   * `flatMap(func)`: pass a function that returns a list and Spark will map it _and_ concatenate the resulting lists. See below for why you might want to do that.
+   * `aggregate(init)(increment, combine)`: reduces the dataset from a huge collection of points to an aggregate of some sort. Histogrammar is intended to be used only with this one.
+
+The Spark methods deliberately look like Scala list methods, but Scala list methods run locally and Spark dispatches them to a distributed cluster. 
+
+
+
+
+
+### Example
+
+This one-liner discovers the Z boson.
+
+```scala
+rdd.filter(_.muons.size >= 2).
+  map({event: Event => event.muons.sortBy(-_.pt).take(2)}).
+    aggregate(Bin(30, 60, 120, {muons: Seq[Muon] => (muons(0) + muons(1)).mass})
+      )(new Increment, new Combine).println
+```
+```
+                    0                                                       5469.20
+                    +-------------------------------------------------------------+
+underflow      1407 |****************                                             |
+[  60 ,  62 )  75   |*                                                            |
+[  62 ,  64 )  60   |*                                                            |
+[  64 ,  66 )  57   |*                                                            |
+[  66 ,  68 )  76   |*                                                            |
+[  68 ,  70 )  82   |*                                                            |
+[  70 ,  72 )  87   |*                                                            |
+[  72 ,  74 )  101  |*                                                            |
+[  74 ,  76 )  121  |*                                                            |
+[  76 ,  78 )  136  |**                                                           |
+[  78 ,  80 )  170  |**                                                           |
+[  80 ,  82 )  256  |***                                                          |
+[  82 ,  84 )  374  |****                                                         |
+[  84 ,  86 )  675  |********                                                     |
+[  86 ,  88 )  1291 |**************                                               |
+[  88 ,  90 )  3381 |**************************************                       |
+[  90 ,  92 )  4972 |*******************************************************      |
+[  92 ,  94 )  2906 |********************************                             |
+[  94 ,  96 )  1040 |************                                                 |
+[  96 ,  98 )  406  |*****                                                        |
+[  98 ,  100)  268  |***                                                          |
+[  100,  102)  153  |**                                                           |
+[  102,  104)  97   |*                                                            |
+[  104,  106)  59   |*                                                            |
+[  106,  108)  64   |*                                                            |
+[  108,  110)  36   |                                                             |
+[  110,  112)  36   |                                                             |
+[  112,  114)  24   |                                                             |
+[  114,  116)  18   |                                                             |
+[  116,  118)  26   |                                                             |
+[  118,  120)  12   |                                                             |
+overflow       242  |***                                                          |
+nanflow        0    |                                                             |
+                    +-------------------------------------------------------------+
+```
