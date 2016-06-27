@@ -1,6 +1,6 @@
 // class definitions
 
-trait LorentzVector {
+trait LorentzVector extends Serializable {
   // abstract members; must be defined by subclasses
   def px: Double
   def py: Double
@@ -49,7 +49,7 @@ case class EventIterator(location: String = "http://histogrammar.org/docs/data/t
   import org.dianahep.histogrammar.json._
 
   // use Java libraries to stream and decompress data on-the-fly
-  val scanner = new java.util.Scanner(
+  @transient val scanner = new java.util.Scanner(
     new java.util.zip.GZIPInputStream(
       new java.net.URL(location).openStream))
 

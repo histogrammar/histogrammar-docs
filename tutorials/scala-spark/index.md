@@ -135,13 +135,11 @@ val filled = rdd.aggregate(empty)(new Increment, new Combine)
 Here is the MET for number of primary vertices between 0 and 4:
 
 ```scala
-println(filled.range(0))
+println(filled.range(0))  // prints the range of the first bin, (0.0,4.0)
 
 filled.values(0)("MET").println
 ```
 ```
-(0.0,4.0)
-
                        0                                                    11316.8
                        +----------------------------------------------------------+
 underflow     0        |                                                          |
@@ -163,13 +161,11 @@ nanflow       0        |                                                        
 And here it is between 4 and 8:
 
 ```scala
-println(filled.range(1))
+println(filled.range(1))   // (4.0,8.0)
 
 filled.values(1)("MET").println
 ```
 ```
-(4.0,8.0)
-
                        0                                                    58080.0
                        +----------------------------------------------------------+
 underflow     0        |                                                          |
@@ -188,11 +184,11 @@ nanflow       0        |                                                        
                        +----------------------------------------------------------+
 ```
 
-A directory of histograms is a perfectly valid thing to use as a histogram's bin. I hope the application of this is clear: if you have a suite of histograms and your advisor (or somebody) asks for them all to be split up by number of primary vertices (or something), you can wrap a primitive and submit another Spark job immediately. Fast turn-around is key to exploration without losing focus.
+A directory of histograms is a perfectly valid thing to put inside a histogram's bin. I hope the application of this is clear: if you have a suite of histograms and your advisor (or somebody) asks for them all to be split up by number of primary vertices (or something), you can wrap the whole thing inside another `Bin` and submit the new Spark job immediately. Fast turn-around is key to exploration without losing focus.
 
 ### Different kinds of bundles
 
-The "Label" primitive makes a directory of histograms, indexed by strings (names). One llimitation that may not be apparent above is that the contents all have to have the same type. They can be histograms of different quantities with different binnings, but they can't, for instance, be a few one-dimensional histograms and a few profile plots:
+As we have seen, the "Label" primitive makes a directory of histograms, indexed by strings (names). One limitation that may not be apparent above is that the contents all have to have the same type. They can be histograms of different quantities with different binnings, but they can't, for instance, include both one-dimensional histograms and profile plots:
 
 ```scala
 val hist1d = Bin(10, 0, 100, {event: Event => event.met.pt})
@@ -205,7 +201,7 @@ val fails = Label("MET" -> hist1d,
 
 (That should give you a lot of type errors.)
 
-One solution is to use an alternative that doesn't force them all to have the same type by not keeping track of the types of its contents:
+One solution is to use a different primitive that doesn't force them all to have the same type: `UntypedLabel` allows multiple types by not recording the types of its contents (similar to `TObjArray` in ROOT).
 
 ```scala
 val succeeds = UntypedLabel("MET" -> hist1d,
@@ -214,7 +210,7 @@ val succeeds = UntypedLabel("MET" -> hist1d,
 val successfullyFilled = rdd.aggregate(succeeds)(new Increment, new Combine)
 ```
 
-The problem with this solution is that you can't immediately plot it. Scala has forgotten what its type was.
+The problem with this solution is that you can't immediately plot it. Scala has forgotten what types the contents have. (Java tags these at runtime, like virtual functions in C++, but the information is not available to the Scala compiler that interprets command lines.)
 
 ```scala
 successfullyFilled("MET").println
@@ -260,13 +256,13 @@ nanflow       0        |                                                        
                        +----------------------------------------------------------+
 ```
 
-where `asInstanceOf` performs a cast and `hist1d.Type` is a shortcut to the one-dimensional histogram's type. Without it, we'd have to write
+where `asInstanceOf` performs a cast and `hist1d.Type` is a shortcut to the one-dimensional histogram's type. Without this shortcut, we'd have to write
 
 ```scala
 successfullyFilled("MET").asInstanceOf[Binning[Event, Counting, Counting, Counting, Counting]].println
 ```
 
-(The `Binning` is parameterized by the kind of data it gets filled with, `Event`, and the kinds of sub-aggregators that it uses for values, underflow, overflow, and "nanflow," a count of NaN values.)
+(The `Binning` is parameterized by the kind of data it gets filled with, `Event`, and the kinds of sub-aggregators that it uses for values, underflow, overflow, and "nanflow.")
 
 In addition to `Label` and `UntypedLabel`, which map string names to histograms (or more generally, "aggregators"), you can collect lists of aggregators without giving them names:
 
@@ -275,13 +271,15 @@ In addition to `Label` and `UntypedLabel`, which map string names to histograms 
 | strings (map) | **[Label](../../specification/#label-directory-with-string-based-keys)** | **[UntypedLabel](../../specification/#untypedlabel-directory-of-different-types)** |
 | integers (sequence) | **[Index](../../specification/#index-list-with-integer-keys)** | **[Branch](../../specification/#branch-tuple-of-different-types)** |
 
-`Index` is a simple list, whose indexes range from zero until the number of items, while `Branch` attempts some Scala type programming to let each item have a different type, yet remember what those types are. Consequently, you can access items with `i0`, `i1`, etc. without casting.
+`Index` is a simple list, whose indexes range from zero until the number of items (for completeness; I'm not sure how that would be useful). The `Branch` primitive allows multiple types, but unlike `UntypedLabel`, it attempts some Scala type-programming to remember the type in each index position (limited to 10 elements). Consequently, you can access items with `i0`, `i1`, etc. without casting.
 
 This suggests an alternate to `UntypedLabel` that is less annoying in Scala: put all aggregators of one type in one branch, another type in another branch, etc. That would allow us to pull out plots without any casting.
 
 ```scala
 val branch = Branch(
+  // all one-dimensional histograms
   Label("MET" -> Bin(10, 0, 100, {event: Event => event.met.pt})),
+  // all profile plots
   Label("MET by numPrimary" ->
     Bin(10, 0, 20, {event: Event => event.numPrimaryVertices},
         Deviate({event: Event => event.met.pt}))))
@@ -326,7 +324,7 @@ nanflow       0        |                                                        
 
 ## Fluent Spark
 
-All of the examples so far have presented attributes of the whole physics event: MET and number of primary vertices. This was to avoid complex Spark manipulations when the focus of the discussion was on histogramming. In this last section, I'll show some Spark idioms that can be useful in physics analyses.
+All of the examples so far deal with features of the whole physics event: MET and number of primary vertices. This was to avoid complex Spark manipulations when the focus of the discussion was on histogramming. In this last section, I'll show some Spark idioms that can be useful in physics analyses.
 
 First, pull down one element for experimentation.
 
@@ -334,7 +332,7 @@ First, pull down one element for experimentation.
 val Array(event) = rdd.take(1)
 ```
 
-(The left-hand-side is a trick to get just the event, rather than a one-element array containing it. What comes after the `val` can be a [Scala Pattern](http://docs.scala-lang.org/tutorials/tour/pattern-matching.html) with new variables as elements of the pattern, like a regular expression. The above is similar to regex-matching `/beginning (.*) end/` to extract text between `beginning` and `end`.)
+(The left-hand-side is a trick to get just the event, rather than a one-element array containing it. What comes after the `val` can be a [Scala Pattern](http://docs.scala-lang.org/tutorials/tour/pattern-matching.html) with new variables as elements of the pattern, like a regular expression. The above is similar to regex-matching `/beginning (.*) end/` to extract the text between `beginning` and `end` in a variable named `\1`.)
 
 Now type `event.` and the tab key for tab-completion.
 
@@ -399,16 +397,169 @@ Spark has [a lot of operations](http://spark.apache.org/docs/latest/programming-
    * `map(func)`: pass a function from `Event` to anything else and you'll get a dataset of anything else.
    * `flatMap(func)`: pass a function that returns a list and Spark will map it _and_ concatenate the resulting lists. See below for why you might want to do that.
    * `aggregate(init)(increment, combine)`: reduces the dataset from a huge collection of points to an aggregate of some sort. Histogrammar is intended to be used only with this one.
+   * `collect`: cause all of the operations to be performed and return the entire result.
+   * `take(n)`: cause only enough operations to be performed to return `n` items from the beginning of the result.
 
-The Spark methods deliberately look like Scala list methods, but Scala list methods run locally and Spark dispatches them to a distributed cluster. 
+The Spark methods deliberately look like Scala list methods, but Scala list methods run locally and Spark dispatches them to a distributed cluster. You can therefore perform a traditional "ntuple skim" like this:
 
+```scala
+def cuts(event: Event): Boolean = {
+  if (event.muons.size >= 2) {
+    val decreasingPt = event.muons.sortBy(-_.pt)   // shorthand function definition
+    val mu1 = decreasingPt(0)
+    val mu2 = decreasingPt(1)
+    (mu1 + mu2).mass > 60      // return true iff mass > 60
+  }
+  else
+    false
+}
 
+case class NtupleVariables(mu1: Muon, mu2: Muon, pair: LorentzVector, numJets: Int)
 
+def ntuple(event: Event): NtupleVariables = {
+    val decreasingPt = event.muons.sortBy(-_.pt)
+    val mu1 = decreasingPt(0)
+    val mu2 = decreasingPt(1)
+    NtupleVariables(mu1, mu2, mu1 + mu2, event.jets.size)
+}
 
+val ntupleRDD = rdd.filter(cuts).map(ntuple)
+```
 
-### Example
+Functions may be defined longhand with `def`, inline with `=>`, or [very briefly with](http://www.codecommit.com/blog/scala/quick-explanation-of-scalas-syntax) `_` if the types can be disambiguated. (Histogrammar constructors require `def` or `=>`.)
 
-This one-liner discovers the Z boson.
+If you tried the code example above, you'd see that it returned immediately, suspiciously fast for a pass over all the data. That's because it didn't do anything. Unlike Scala list transformations, Spark RDD transformations don't actually happen until you declare an output for the result: they're "lazy."
+
+### The value of lazy operations
+
+Have you ever needed to start many jobs, each of them differing by one or two parameters? A cut scan, for instance? Using traditional physics tools, you'd probably have to write a script that generates shell scripts, each for a different value of the parameter. Writing programs that write programs is known as "metaprogramming."
+
+Spark lets you do that without the error-prone business of generating code as text. Since the transformations are lazy, you can generate many chains of transformations with a local Scala loop, inspect the result, and then start the jobs, confident that they'll do something halfway reasonable. (They won't have any syntax errors and they'll be thoroughly type-checked. Beyond that, you'll still have to think about what the results mean.)
+
+For instance, suppose we want to plot Z bosons (`mu1 + mu2` with a mass above 60) with different numbers of jets. First we prepare the basic cuts:
+
+```scala
+val zbosonsRDD = rdd.filter(cuts)
+```
+
+using our `cuts` definition above. Then we create an RDD for each number of jets:
+
+```scala
+val njetsRDD = (0 to 5).map({i =>
+  zbosonsRDD.filter({event: Event => event.jets.size == i}).map(ntuple)
+  })
+```
+
+See that `njetsRDD` is a sequence of RDDs:
+
+```scala
+:type njetsRDD
+scala.collection.immutable.IndexedSeq[org.apache.spark.rdd.RDD[NtupleVariables]]
+
+:type njetsRDD(0)
+org.apache.spark.rdd.RDD[NtupleVariables]
+
+:type njetsRDD(1)
+org.apache.spark.rdd.RDD[NtupleVariables]
+```
+
+and again, they're lazy: nothing has happened yet. We could force everything to be evaluated&mdash; and downloaded&mdash; by running `.collect` on them all. If the results are huge, that won't be possible. Instead, let's make a plot of each cut.
+
+```scala
+val template = Bin(30, 60, 120, {nt: NtupleVariables => nt.pair.mass})
+
+val histograms = njetsRDD.map(_.aggregate(template)(new Increment, new Combine))
+
+histograms(0).println
+histograms(1).println
+histograms(2).println
+histograms(3).println
+histograms(4).println
+histograms(5).println
+```
+
+Now that setting up a distributed job requires so little effort, we should consider doing more work on the cluster and less on local disk. There may be no reason to ever download the ntuple.
+
+It's still useful to make ntuples, or more generally "partial summaries," of the data. In the above example, we knew that we wanted events to contain at least two muons long before we knew how many jets to require, so we did that as a succession of cuts. For faster turn-around on a partial workflow, we can tell Spark to give it priority in RAM:
+
+```scala
+zbosonsRDD.persist()
+```
+
+Now cutting on the number of jets won't have to re-apply the cut that requires two muons, and if there's enough RAM on the distributed cluster, it won't have to load data from disk, either. A data analysis could involve several of these checkpoints, not just the traditional ntuple.
+
+### The value of flatMap
+
+One of the Spark operations I recommended above may look mysterious: `flatMap`. Formally, this is a `map` transformation followed by a `flatten`, which turns a list of lists of **X** into a list of **X**. Why might you ever use that?
+
+Here's a reason: perhaps you're not interested in events, only particles. The following turns an RDD of `Events` into an RDD of `Muons`:
+
+```scala
+val muonsRDD = rdd.flatMap(_.muons)
+
+:type muonsRDD
+org.apache.spark.rdd.RDD[Muon]
+```
+
+Any subsequent operations or plots that you make would now take a `Muon` as input, rather than an `Event`. If you're doing detector studies, there are three levels of hierarchy: event, track, and hit or event, shower, and cell.
+
+Another reason might be to avoid recalculation in a `filter` and `map`. Consider the previous example:
+
+```scala
+def cuts(event: Event): Boolean = {
+  if (event.muons.size >= 2) {
+    val decreasingPt = event.muons.sortBy(-_.pt)   // shorthand function definition
+    val mu1 = decreasingPt(0)
+    val mu2 = decreasingPt(1)
+    (mu1 + mu2).mass > 60      // return true iff mass > 60
+  }
+  else
+    false
+}
+
+case class NtupleVariables(mu1: Muon, mu2: Muon, pair: LorentzVector, numJets: Int)
+
+def ntuple(event: Event): NtupleVariables = {
+    val decreasingPt = event.muons.sortBy(-_.pt)
+    val mu1 = decreasingPt(0)
+    val mu2 = decreasingPt(1)
+    NtupleVariables(mu1, mu2, mu1 + mu2, event.jets.size)
+}
+
+val ntupleRDD = rdd.filter(cuts).map(ntuple)
+```
+
+Both the `cuts` and the `ntuple` functions sort the muons, and that repeated work could be wasteful. To do both of these in one Spark operation, try this:
+
+```scala
+def cutAndNtuple(event: Event): Option[NtupleVariables] = {
+  if (event.muons.size >= 2) {
+    val decreasingPt = event.muons.sortBy(-_.pt)
+    val mu1 = decreasingPt(0)
+    val mu2 = decreasingPt(1)
+    if ((mu1 + mu2).mass > 60) {
+      Some(NtupleVariables(mu1, mu2, mu1 + mu2, event.jets.size))
+    }
+    else
+      None
+  }
+  else
+    None
+}
+
+val ntupleRDD = rdd.flatMap(cutAndNtuple)
+
+// take a look
+ntupleRDD.take(5)
+```
+
+What's happening here is that `Option` is a kind of list that can have only zero or one elements. (It's a fermion!) When `cutAndNtuple` produces no output, it returns an empty list (`None`) and when it produces a transformed event, it returns it as a single-element list (`Some(NtupleVariables(...))`). Then `flatMap` concatenates these, so the zero-element lists are gone and the one-element lists get merged together into a big list.
+
+Unlike any combination of `map` and `filter`, `flatMap` can make collections with more elements than the input collection. It is a surprisingly general tool, and it has deep theoretical foundations. (It is the ["bind" operation of a monad](https://wiki.haskell.org/Monad).)
+
+### Final example
+
+The following starts with raw events and plots the Z boson in one line.
 
 ```scala
 rdd.filter(_.muons.size >= 2).
