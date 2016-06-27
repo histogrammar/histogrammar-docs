@@ -32,12 +32,12 @@ summary: |
 
 ## Quick start for LPC at Fermilab
 
-If you have access to the LPC at Fermilab, you can run a preinstalled copy of [Histogrammar version 0.7](http://github.com/diana-hep/histogrammar/releases/tag/0.7).
+If you have access to the LPC at Fermilab, you can run a preinstalled copy of [Histogrammar version 0.7.1](http://github.com/diana-hep/histogrammar/releases/tag/0.7.1).
 
 | LPC at Fermilab | `cmslpc-sl6.fnal.gov` |
 |:----------------|:----------------------|
-| for Scala | `/uscms/home/pivarski/public/histogrammar-0.7.jar` |
-| for SparkSQL | `/uscms/home/pivarski/public/histogrammar-sparksql-0.7.jar          ` |
+| for Scala | `/uscms/home/pivarski/public/histogrammar-0.7.1.jar` |
+| for SparkSQL | `/uscms/home/pivarski/public/histogrammar-sparksql-0.7.1.jar          ` |
 | for Python 2.6 | `/uscms/home/pivarski/public/histogrammar0.7-python2.6` |
 | for C++ | `/uscms/home/pivarski/public/include07` |
 | Scala 2.10.5 | `/uscms/home/pivarski/public/scala-2.10.5` |
@@ -47,7 +47,7 @@ To start a Scala prompt with Histogrammar loaded, do the following:
 
 ```bash
 export PATH=/uscms/home/pivarski/public/scala-2.10.5/bin:$PATH
-scala -cp /uscms/home/pivarski/public/histogrammar-0.7.jar
+scala -cp /uscms/home/pivarski/public/histogrammar-0.7.1.jar
 ```
 ```scala
 scala> import org.dianahep.histogrammar._
@@ -57,7 +57,7 @@ To start a local (non-distributed, testing) Spark session with Histogrammar load
 
 ```bash
 export PATH=/uscms/home/pivarski/public/spark-1.6.1-bin-hadoop1/bin:$PATH
-spark-shell --jars=/uscms/home/pivarski/public/histogrammar-0.7.jar,/uscms/home/pivarski/public/histogrammar-sparksql-0.7.jar
+spark-shell --jars=/uscms/home/pivarski/public/histogrammar-0.7.1.jar,/uscms/home/pivarski/public/histogrammar-sparksql-0.7.1.jar
 ```
 ```scala
 scala> import org.dianahep.histogrammar._
@@ -90,12 +90,12 @@ in your code.
 
 ## Quick start for LXPLUS at CERN
 
-If you have access to LXPLUS at CERN, you can run a preinstalled copy of [Histogrammar version 0.7](http://github.com/diana-hep/histogrammar/releases/tag/0.7).
+If you have access to LXPLUS at CERN, you can run a preinstalled copy of [Histogrammar version 0.7.1](http://github.com/diana-hep/histogrammar/releases/tag/0.7.1).
 
 | LXPLUS at CERN | `lxplus.cern.ch` |
 |:----------------|:----------------------|
-| for Scala | `/afs/cern.ch/user/p/pivarski/public/histogrammar-0.7.jar` |
-| for SparkSQL | `/afs/cern.ch/user/p/pivarski/public/histogrammar-sparksql-0.7.jar` |
+| for Scala | `/afs/cern.ch/user/p/pivarski/public/histogrammar-0.7.1.jar` |
+| for SparkSQL | `/afs/cern.ch/user/p/pivarski/public/histogrammar-sparksql-0.7.1.jar` |
 | for Python 2.6 | `/afs/cern.ch/user/p/pivarski/public/histogrammar0.7-python2.6` |
 | for C++ | `/afs/cern.ch/user/p/pivarski/public/include07` |
 | Scala 2.10.5 | `/afs/cern.ch/user/p/pivarski/public/scala-2.10.5` |
@@ -105,7 +105,7 @@ To start a Scala prompt with Histogrammar loaded, do the following:
 
 ```bash
 export PATH=/afs/cern.ch/user/p/pivarski/public/scala-2.10.5/bin:$PATH
-scala -cp /afs/cern.ch/user/p/pivarski/public/histogrammar-0.7.jar
+scala -cp /afs/cern.ch/user/p/pivarski/public/histogrammar-0.7.1.jar
 ```
 ```scala
 scala> import org.dianahep.histogrammar._
@@ -115,7 +115,7 @@ To start a local (non-distributed, testing) Spark session with Histogrammar load
 
 ```bash
 export PATH=/afs/cern.ch/user/p/pivarski/public/spark-1.6.1-bin-hadoop1/bin:$PATH
-spark-shell --jars=/afs/cern.ch/user/p/pivarski/public/histogrammar-0.7.jar,/afs/cern.ch/user/p/pivarski/public/histogrammar-sparksql-0.7.jar
+spark-shell --jars=/afs/cern.ch/user/p/pivarski/public/histogrammar-0.7.1.jar,/afs/cern.ch/user/p/pivarski/public/histogrammar-sparksql-0.7.1.jar
 ```
 ```scala
 scala> import org.dianahep.histogrammar._
