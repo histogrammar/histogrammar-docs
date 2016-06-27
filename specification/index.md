@@ -1302,8 +1302,8 @@ This constructor will make a past-tense Fraction object that can be used to repr
 
 ```python
 def fill(fractioning, datum, weight):
-    w = weight * fractioning.quantity(datum)
     if weight > 0.0:
+        w = weight * fractioning.quantity(datum)
         fill(fractioning.denominator, datum, weight)
         if w > 0.0:
             fill(fractioning.numerator, datum, w)
