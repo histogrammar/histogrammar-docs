@@ -20,7 +20,7 @@ scala -cp histogrammar-0.7.jar
 
 for an appropriate version of Histogrammar to get a `scala>` prompt. Then _either_
 
-  * enter paste mode by typing `:paste`, copy-paste the code into your terminal, and hit ctrl-D to exit paste mode, _or_
+  * copy-paste the code into your terminal (watching for possible error messages), _or_
   * download the raw code and type `:load /path/to/scala-cmsdata.scala` to load it.
 
 If all goes well, you'll have an iterator named `events` that pulls data from the web as needed. You get events by repeatedly calling `events.next()`. To restart the iterator from the beginning, do `val events = EventIterator()`.
@@ -30,7 +30,7 @@ The code to copy-paste is below and the [link to raw code is here](../../data/sc
 ```scala
 // class definitions
 
-trait LorentzVector {
+trait LorentzVector extends Serializable {
   // abstract members; must be defined by subclasses
   def px: Double
   def py: Double
@@ -79,7 +79,7 @@ case class EventIterator(location: String = "http://histogrammar.org/docs/data/t
   import org.dianahep.histogrammar.json._
 
   // use Java libraries to stream and decompress data on-the-fly
-  val scanner = new java.util.Scanner(
+  @transient val scanner = new java.util.Scanner(
     new java.util.zip.GZIPInputStream(
       new java.net.URL(location).openStream))
 

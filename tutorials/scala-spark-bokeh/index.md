@@ -118,7 +118,7 @@ save(plot_stack,"scala_plot_stack.html")
 This tutorial also uses the [CMS public dataset](scala-cmsdata) as sample data. Load the code on that page to get an `events` iterator, then do:
 
 ```scala
-val dataset_rdd = sc.parallelize(events)
+val dataset_rdd = sc.parallelize(events.toSeq)
 ```
 
 to turn it into a Spark RDD. It may take about 20 seconds to transfer all the data to your Spark cluster.
