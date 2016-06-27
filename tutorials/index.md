@@ -4,13 +4,11 @@ type: homepage
 toc: false
 ---
 
-<div style="float: right; width: 160px; font-size: 12px; border: solid 1px #4e5f70;"><p style="margin: 5px;">Tutorials with no progress bar are <i>complete.</i></p></div>
-
 ## Basics
 
 ### Scala
 
-  * [Basic use in Scala](scala-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
+  * {% include progress.html complete=100 %} [Basic use in Scala](scala-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
 
 ### Python
 
@@ -20,19 +18,19 @@ toc: false
 
 ### Scala
 
-  * [Making Bokeh plots in Spark](scala-spark-bokeh): How to aggregate Apache Spark data in Histogrammar and send it to the Bokeh plotting package in Scala.
+  * {% include progress.html complete=100 %} [Making Bokeh plots in Spark](scala-spark-bokeh): How to aggregate Apache Spark data in Histogrammar and send it to the Bokeh plotting package in Scala.
 
 ### Python
 
-  * [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the ROOT analysis package in Python. This tutorial is complete enough that you could start here.
-  * {% include progress.html complete=0 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the Bokeh plotting package in Python.
+  * {% include progress.html complete=100 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the ROOT analysis package in Python. This tutorial is complete enough that you could start here.
+  * {% include progress.html complete=100 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the Bokeh plotting package in Python.
 
 ## Aggregation back-ends
 
 ### Scala
 
-  * {% include progress.html complete=0 %} [Collecting data in Spark](scala-spark): How to use your Apache Spark cluster to make histograms, rather than downloading the data and plotting locally.
-  * {% include progress.html complete=0 %} [Enhancements for SparkSQL](scala-sparksql): Special bindings to make histograms directly from Apache SparkSQL tables.
+  * {% include progress.html complete=100 %} [Collecting data in Spark](scala-spark): How to use your Apache Spark cluster to make histograms, rather than downloading the data and plotting locally.
+  * {% include progress.html complete=100 %} [Enhancements for SparkSQL](scala-sparksql): Special bindings to make histograms directly from Apache SparkSQL tables.
   * {% include progress.html complete=0 %} [Just-in-time compilation in Scala](scala-jit): How to make your aggregations on local data faster.
 
 ### Python
@@ -50,6 +48,6 @@ toc: false
 
 These tutorials contain instructions common to most of the others. If you need one, you'll be referred to it, but they're listed here for completeness.
 
-  * [CMS public dataset in Scala](scala-cmsdata): Sample data for plots in Scala.
-  * [CMS public dataset in Python](python-cmsdata): The same sample data, accessed in Python.
+  * {% include progress.html complete=100 %} [CMS public dataset in Scala](scala-cmsdata): Sample data for plots in Scala.
+  * {% include progress.html complete=100 %} [CMS public dataset in Python](python-cmsdata): The same sample data, accessed in Python.
 
