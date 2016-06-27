@@ -4,6 +4,7 @@ type: default
 toc: false
 summary: |
     <p>If you're performing an analysis on a remote computer and want to display plots locally, or if you're working in one framework (like Scala) and want to make plots with another (like Python), read this page.</p>
+    <p><b>Author:</b> <a href="http://github.com/jpivarski">Jim Pivarski</a></p>
 ---
 
 ## Preliminaries

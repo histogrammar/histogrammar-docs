@@ -2,6 +2,9 @@
 title: Basic use in Scala
 type: default
 toc: false
+summary: |
+    <p>If you're using Histogrammar for the first time in <a href="http://www.scala-lang.org/">Scala</a>, read this page.</p>
+    <p><b>Author:</b> <a href="http://github.com/jpivarski">Jim Pivarski</a></p>
 ---
 
 ## Preliminaries

@@ -4,6 +4,7 @@ type: default
 toc: false
 summary: |
     <p>If you're working with in Python and want to use <a href="https://github.com/bokeh/bokeh">Bokeh</a> to draw plots, read this page.</p>
+    <p><b>Author:</b> <a href="https://github.com/ASvyatkovskiy">Alexey Svyatkovskiy</a></p>
 ---
 
 ## Setting up

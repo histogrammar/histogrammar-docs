@@ -2,6 +2,9 @@
 title: CMS dataset in Python
 type: homepage
 toc: false
+summary: |
+    <p>If you need a somewhat complex dataset for testing plot features in Python, read this page.</p>
+    <p><b>Author:</b> <a href="http://github.com/jpivarski">Jim Pivarski</a></p>
 ---
 
 ## Rationale

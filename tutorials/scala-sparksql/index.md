@@ -2,6 +2,9 @@
 title: Collecting data in SparkSQL
 type: default
 toc: false
+summary: |
+    <p>If you're working with <a href="http://spark.apache.org/sql/">SQL in Apache Spark</a> in Scala, read this page.</p>
+    <p><b>Author:</b> <a href="http://github.com/jpivarski">Jim Pivarski</a></p>
 ---
 
 ## Preliminaries
