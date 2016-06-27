@@ -3,7 +3,7 @@ title: Drawing plots in Python with Bokeh
 type: default
 toc: false
 summary: |
-    <p>If you're working with <a href="http://spark.apache.org/">Apache Spark</a> in Python and want to use <a href="https://github.com/bokeh/bokeh">Bokeh</a> to draw plots, read this page.</p>
+    <p>If you're working with in Python and want to use <a href="https://github.com/bokeh/bokeh">Bokeh</a> to draw plots, read this page.</p>
 ---
 
 ## Setting up
@@ -13,7 +13,7 @@ The examples on this page have been tested with Histogrammar 0.7. Any subsequent
 ## Plotting a Histogram in `Python`
 
 The examples of plotting histograms with `python-bokeh` presented in this section use `Python` and artificial data.
-In the Python or PySpark REPL, start by importing the Histogrammar package and the plotting library:
+In the Python (or PySpark REPL), start by importing the Histogrammar package and the plotting library:
 
 ```python
 from histogrammar import *
