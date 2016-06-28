@@ -757,7 +757,7 @@ Use this when you have a distribution of known scale (bin width) but unknown dom
 
 Unlike fixed-domain binning, this aggregator has the potential to use unlimited memory. A large number of _distinct_ outliers can generate many unwanted bins.
 
-Like fixed-domain binning, the bins are indexed by integers, though they are 64-bit and may be negative.
+Like fixed-domain binning, the bins are indexed by integers, though they are 64-bit and may be negative. Bin indexes below `-(2**63 - 1)` are put in the `-(2**63 - 1)` are bin and indexes above `(2**63 - 1)` are put in the `(2**63 - 1)` bin.
 
 ### SparselyBinning constructor and required members
 
@@ -795,8 +795,15 @@ def fill(sparselybinning, datum, weight):
         if math.isnan(q):
             fill(sparselybinning.nanflow, datum, weight)
         else:
-            bin = long(math.floor(binning.num * \
-                (q - binning.low) / (binning.high - binning.low)))
+            softbin = math.floor(binning.num * \
+                (q - binning.low) / (binning.high - binning.low))
+            if softbin < -(2**63 - 1):
+                bin = -(2**63 - 1)
+            elif softbin > (2**63 - 1):
+                bin = (2**63 - 1)
+            else:
+                bin = long(softbin)
+
             if bin in binning.bins:
                 binning.bins[bin] = binning.value.copy()
             fill(binning.bins[bin], datum, weight)
@@ -1302,12 +1309,12 @@ This constructor will make a past-tense Fraction object that can be used to repr
 
 ```python
 def fill(fractioning, datum, weight):
-    w = weight * fractioning.quantity(datum)
     if weight > 0.0:
+        w = weight * fractioning.quantity(datum)
         fill(fractioning.denominator, datum, weight)
-    if w > 0.0:
-        fill(fractioning.numerator, datum, w)
-    fractioning.entries += weight
+        if w > 0.0:
+            fill(fractioning.numerator, datum, w)
+        fractioning.entries += weight
 
 def combine(one, two):
     entries = one.entries + two.entries
@@ -1623,10 +1630,11 @@ Select.ed(entries, cut)
 
 ```python
 def fill(selecting, datum, weight):
-    w = weight * selecting.quantity(datum)
-    if w > 0.0:
-        fill(selecting.cut, datum, w)
-    selecting.entries += weight
+    if weight > 0.0:
+        w = weight * selecting.quantity(datum)
+        if w > 0.0:
+            fill(selecting.cut, datum, w)
+        selecting.entries += weight
 
 def combine(one, two):
     entries = one.entries + two.entries
@@ -1719,10 +1727,12 @@ Limit.ed(entries, limit, contentType, value)
 
 ```python
 def fill(limiting, datum, weight):
-    if limiting.entries + weight > limiting.limit:
-        limiting.value = None
-    else:
-        fill(limiting.value, datum, weight)
+    if weight > 0.0:
+        if limiting.entries + weight > limiting.limit:
+            limiting.value = None
+        else:
+            fill(limiting.value, datum, weight)
+        limiting.entries += weight
 
 def combine(one, two):
     if one.limit != two.limit or one.contentType != two.contentType:
@@ -1809,9 +1819,10 @@ Label.ed(entries, pairs)
 
 ```python
 def fill(labeling, datum, weight):
-    for _, v in labeling.pairs:
-        fill(v, datum, weight)
-    labeling.entries += weight
+    if weight > 0.0:
+        for _, v in labeling.pairs:
+            fill(v, datum, weight)
+        labeling.entries += weight
 
 def combine(one, two):
     if set(one.pairsMap.keys()) != set(two.pairsMap.keys()):
@@ -1881,9 +1892,10 @@ UntypedLabel.ed(entries, pairs)
 
 ```python
 def fill(untypedlabeling, datum, weight):
-    for _, v in untypedlabeling.pairs:
-        fill(v, datum, weight)
-    untypedlabeling.entries += weight
+    if weight > 0.0:
+        for _, v in untypedlabeling.pairs:
+            fill(v, datum, weight)
+        untypedlabeling.entries += weight
 
 def combine(one, two):
     if set(one.pairsMap.keys()) != set(two.pairsMap.keys()):
@@ -1965,9 +1977,10 @@ Index.ed(entries, values)
 
 ```python
 def fill(indexing, datum, weight):
-    for v in indexing.values:
-        fill(v, datum, weight)
-    indexing.entries += weight
+    if weight > 0.0:
+        for v in indexing.values:
+            fill(v, datum, weight)
+        indexing.entries += weight
 
 def combine(one, two):
     if len(one.values) != len(two.values):
@@ -2049,9 +2062,10 @@ Branch.ed(entries, values)
 
 ```python
 def fill(branching, datum, weight):
-    for v in branching.values:
-        fill(v, datum, weight)
-    branching.entries += weight
+    if weight > 0.0:
+        for v in branching.values:
+            fill(v, datum, weight)
+        branching.entries += weight
 
 def combine(one, two):
     if len(one.values) != len(two.values):
@@ -2257,8 +2271,9 @@ def merge(values, datum, weight, limit, randomGenerator):
         del values[0]
 
 def fill(sampling, datum, weight):
-    merge(sampling.values, datum, weight, sampling.limit, sampling.randomGenerator)
-    sampling.entries += weight
+    if weight > 0.0:
+        merge(sampling.values, datum, weight, sampling.limit, sampling.randomGenerator)
+        sampling.entries += weight
 
 def combine(one, two):
     if one.limit != two.limit:
