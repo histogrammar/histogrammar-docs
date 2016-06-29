@@ -52,10 +52,22 @@ ax = histogram.matplotlib(name="hello world!")
 # to improve plot styling, try adding **kwargs suitable for plt.bar
 #  e.g.: ax = histogram.matplotlib(name="hello world!", color="slategrey", edgecolor="white")
 ```
+If the plot doesn't show up in your IPython terminal, you may need to turn
+interactive mode on, `plt.ion()`, or call `plt.show()`.
 
 The first three arguments to `hg.Bin` are pretty self explanitory.  `num` is
 the number of equal width bins to use.  The `low` and `high` parameters are the
-lower and upper boundaries.  The last two arguments are more interesting.
+lower and upper boundaries.
+
+With `hg.Bin`, the user can also specify:
+
+  * `underflow`: what to do with data below the low edge;
+  * `overflow`: what to do with data above the high edge;
+  * `nanflow`: what to do with data that is not a number (`NaN`).
+
+The default for these is `Count()`.
+
+Most of the action happens in `value` and `quantity` parameters.
 ![First plot](helloworld.png)
 
 ## Composability
@@ -193,7 +205,9 @@ different computing environments.
 ### Exporting results
 
 The aggregated data is easily accessible as attributes.  If you are using an
-IPython terminal type h.<tab>, or dir(h).  Try printing `h.values`. 
+IPython terminal type h.<tab>, or dir(h).  Try printing `h.values`.  If a
+plotting method doesn't exist for your histogrammar structure, this is how you
+extract the results.
 
 Histogrammar also can export its results in a consistent
 [JSON][https://en.wikipedia.org/wiki/JSON] format.  This allows results to be
@@ -210,10 +224,39 @@ print json.dump(h.toJson())
 
 ## Realistic Examples
 
-The next series of examples follows the PyROOT tutorial, and shows of some of
-the more advanced histogrammar options.
+The next series of examples follows the PyROOT tutorial and shows of some of
+the more advanced histogrammar aggregations and quick matplotlib plotting
+methods.  First let's load in the CMS data used in the other examples:
 
 ```python
 events = EventIterator()
 ```
+
+The following series of examples is meant to highlight histogrammars
+composability, and to highlight how this enables interesting aggregations to be
+easily made.  As you may have noticed, from how `Count` can be used similarly
+to `Bin`, why not do a `Bin` of `Bin` of `Count`.  This creates a 2 dimensional
+histogram:
+
+```python
+hist2d = hg.Bin(50, -100, 100, lambda event: event.met.px,
+             value = hg.Bin(50, -100, 100, lambda event: event.met.py))
+
+for i, event in enumerate(events):
+    if i == 5000: break
+    hist2d.fill(event)
+
+ax = hist2d.matplotlib(name="2 dimensional histogram")
+ax.set_ylabel("met py")
+ax.set_xlabel("met px")
+```
+
+![Two-dimensional histogram](hist2d.png)
+
+
+
+
+
+
+
 
