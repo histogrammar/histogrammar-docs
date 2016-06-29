@@ -226,9 +226,17 @@ def fill(averaging, datum, weight):
     if weight > 0.0:
         q = averaging.quantity(datum)
         averaging.entries += weight
-        delta = q - averaging.mean
-        shift = delta * weight / averaging.entries
-        averaging.mean += shift
+
+        if math.isinf(averaging.mean) and math.isinf(q):
+            if averaging.mean * q > 0.0:       # same sign
+                pass                           # it's still infinite
+            else:
+                averaging.mean = float("nan")  # mean of -inf and inf is nan
+
+        else:                                  # handle finite case
+            delta = q - averaging.mean
+            shift = delta * weight / averaging.entries
+            averaging.mean += shift
 
 def combine(one, two):
     entries = one.entries + two.entries
@@ -291,10 +299,20 @@ def fill(deviating, datum, weight):
         q = deviating.quantity(datum)
         varianceTimesEntries = deviating.variance * deviating.entries
         deviating.entries += weight
-        delta = q - deviating.mean
-        shift = delta * weight / deviating.entries
-        deviating.mean += shift
-        varianceTimesEntries += weight * delta * (q - deviating.mean)
+
+        if math.isinf(deviating.mean) and math.isinf(q):
+            if deviating.mean * q > 0.0:       # same sign
+                pass                           # it's still infinite (variance should follow suit)
+            else:
+                deviating.mean = float("nan")  # mean of -inf and inf is nan
+                deviating.varianceTimesEntries = float("nan")
+
+        else:                                  # handle finite case
+            delta = q - deviating.mean
+            shift = delta * weight / deviating.entries
+            deviating.mean += shift
+            varianceTimesEntries += weight * delta * (q - deviating.mean)
+
         deviating.variance = varianceTimesEntries / deviating.entries
 
 def combine(one, two):

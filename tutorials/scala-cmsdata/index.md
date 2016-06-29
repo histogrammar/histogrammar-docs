@@ -1,6 +1,6 @@
 ---
 title: CMS dataset in Scala
-type: homepage
+type: default
 toc: false
 summary: |
     <p>If you need a somewhat complex dataset for testing plot features in Scala, read this page.</p>
