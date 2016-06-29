@@ -227,11 +227,18 @@ def fill(averaging, datum, weight):
         q = averaging.quantity(datum)
         averaging.entries += weight
 
-        if math.isinf(averaging.mean) and math.isinf(q):
-            if averaging.mean * q > 0.0:       # same sign
-                pass                           # it's still infinite
+        if math.isnan(averaging.mean) or math.isnan(q):
+            averaging.mean = float("nan")
+
+        elif math.isinf(averaging.mean) or math.isinf(q):
+            if math.isinf(averaging.mean) and math.isinf(q) and averaging.mean * q < 0.0:
+                averaging.mean = float("nan")  # opposite-sign infinities is bad
+            elif math.isinf(q):
+                averaging.mean = q             # mean becomes infinite with sign of q
             else:
-                averaging.mean = float("nan")  # mean of -inf and inf is nan
+                pass                           # mean is already infinite
+            if math.isinf(averaging.entries) or math.isnan(averaging.entries):
+                averaging.mean = float("nan")  # non-finite denominator is bad
 
         else:                                  # handle finite case
             delta = q - averaging.mean
@@ -300,14 +307,24 @@ def fill(deviating, datum, weight):
         varianceTimesEntries = deviating.variance * deviating.entries
         deviating.entries += weight
 
-        if math.isinf(deviating.mean) and math.isinf(q):
-            if deviating.mean * q > 0.0:       # same sign
-                pass                           # it's still infinite (variance should follow suit)
-            else:
-                deviating.mean = float("nan")  # mean of -inf and inf is nan
-                deviating.varianceTimesEntries = float("nan")
+        if math.isnan(deviating.mean) or math.isnan(q):
+            deviating.mean = float("nan")
+            deviating.varianceTimesEntries = float("nan")
 
-        else:                                  # handle finite case
+        elif math.isinf(deviating.mean) or math.isinf(q):
+            if math.isinf(deviating.mean) and math.isinf(q) and deviating.mean * q < 0.0:
+                deviating.mean = float("nan") # opposite-sign infinities is bad
+            elif math.isinf(q):
+                deviating.mean = q            # mean becomes infinite with sign of q
+            else:
+                pass                          # mean and variance are already infinite
+            if math.isinf(deviating.entries) or math.isnan(deviating.entries):
+                deviating.mean = float("nan") # non-finite denominator is bad
+
+            # any infinite value makes the variance NaN
+            deviating.varianceTimesEntries = float("nan")
+
+        else:                                 # handle finite case
             delta = q - deviating.mean
             shift = delta * weight / deviating.entries
             deviating.mean += shift
