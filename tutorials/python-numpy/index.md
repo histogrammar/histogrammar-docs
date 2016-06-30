@@ -203,11 +203,48 @@ Here is a rough table of speedup factors (wall time for pure Python divided by w
 | Bag               | 1.5-2X           |
 | Sample            | 1-1.5X           |
 
+**Some caveats:**
 
+   * `Count` cannot be used alone in Numpy because it does not extract a quantity, a one-dimensional array to examine and get the length. `Counts` embedded in primitives that extract quantities are fine because those other primitives determine (and assert!) the lengths of the arrays.
+   * `Quantile` is an order-dependent algorithm. Without an implementation compiled into Numpy, it can't be computed in a column-by-column way. This implementation extracts the array and feeds it through the standard row-by-row implementation, which is why it has almost no speedup.
+   * `Bin` has a wide range of speedups because some cases can use `numpy.histogram` and others can't.
+   * `AdaptivelyBin` is just impossible: aggregators containing `AdaptivelyBin` cannot be used with Numpy. The reason is that it is an order-dependent algorithm that contains sub-aggregators. These sub-aggregators don't even retain their identities as they get merged with incoming data. It wouldn't be possible to feed data from the array into them, as in the case of `Quantile`.
+   * `Categorize` operates on strings and builds a dictionary: not something you can do in Numpy. However, its sub-aggregators retain their identities, so we can play the data back to them, like `Quantile`.
+   * `Label`, `UntypedLabel`, `Index`, and `Branch` are just containers; they pass the data along in the same way whether the data fill row-by-row or column-by-column.
+   * `Bag` and `Sample` defer to the row-by-row implementations, but `Sample` has the same kind of order-dependence as `Quantile` and `AdaptivelyBin`.
 
+## Insights on theory
 
+This exercise picked out an important theoretical consideration: the primitives that were hard or impossible to translate from a row-by-row implementation to a column-by-column implementation were the ones whose result depend on the order in which the data arrive: `Quantile`, `AdaptivelyBin`, and `Sample`. Their results differ if they are partitioned differently in a distributed workflow, but that was considered justified because they're all approximations anyway.
 
+This property is associativity (insensitivity to how the input data are partitioned, processed independently, and combined) and commutativity (insensitivity to the order of input). Associativity of an aggregator `h` can be demonstrated with
 
-## Chunking an iteration
+```python
+h1 = h.copy()
+h2 = h.copy()
+h3 = h.copy()
 
+h1.numpy(data)
+h2.numpy(data)
 
+h3.numpy(data)
+h3.numpy(data)
+
+assert h1 + h2 == h3
+```
+
+and commutativity can be demonstrated with
+
+```python
+h1 = h.copy()
+h2 = h.copy()
+
+h1.numpy(data)
+h2.numpy(numpy.random.permutation(data))
+
+assert h1 == h2
+```
+
+`Quantile`, `AdaptivelyBin`, and `Sample` are the three primitives that fail these properties, so they're not perfectly reproducible in a distributed environment and they couldn't be implemented in Numpy (not implemented well for `Quantile` and `Sample`, not implemented at all for `AdaptivelyBin`, because it has sub-aggregators). Perhaps they should be excluded from the Histogrammar language on this basis.
+
+Perhaps I should have known that from the start, but going through this exercise showed how concrete the consequences of these mathematical properties are. It's not just a nicety.
