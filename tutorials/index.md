@@ -35,7 +35,7 @@ toc: false
 
 ### Python
 
-  * {% include progress.html complete=0 %} [Enhancements for Numpy](python-numpy): Aggregating over data in Numpy arrays without a Python for loop (i.e. faster).
+  * {% include progress.html complete=100 %} [Enhancements for Numpy](python-numpy): Aggregating over data in Numpy arrays without a Python for loop (i.e. faster).
 
 ## Utility applications
 
