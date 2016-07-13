@@ -40,8 +40,8 @@ $(window).on("resize", setmargins);
 	</div>
 	<div id="menu">
 		<ul>
-			<li><a href="http://histogrammar.org/docs/" accesskey="1" title="">Documentation</a></li>
-			<li><a href="https://github.com/diana-hep/histogrammar" accesskey="2" title="">GitHub</a></li>
+			<li><a href="http://histogrammar.org/docs" accesskey="1" title="">Documentation</a></li>
+			<li><a href="http://github.com/histogrammar" accesskey="2" title="">GitHub</a></li>
 		</ul>
 	</div>
 </div>
@@ -52,7 +52,7 @@ $(window).on("resize", setmargins);
 
 			<span class="byline">Making histograms functional</span> </div>
 
-<p>Histogrammar is a suite of composable data aggregation primitives, for making histograms and much, much more. One interface is implemented across many languages, all with a common JSON format, to make it easy to aggregate data in hard-to-reach places (in a distributed framework like Apache Spark, on a GPU or coprocessor, or through a thin bandwidth connection) and bring it into your favorite plotting framework for visualization.</p>
+<p>Histogrammar is a suite of data aggregation primitives, for making histograms and much more. A few composable functions can generate many different types of plots, and these functions are reimplemented (exactly!) in multiple languages for cross-platform compatibility.</p>
 	</div>
 
 <div class="title"></div>
@@ -62,16 +62,16 @@ $(window).on("resize", setmargins);
 
 <h3>What is this and why might I want it?</h3>
 
-<p>Histogrammar is an experiment in aggregating data with functional primitives. It serves the same need as HBOOK and its descendants&mdash; summarizing a large dataset with discretized distributions&mdash; but it does so using composable aggregators instead of fixed histogram types.</p>
+<p>Histogrammar allows you to aggregate data using cross-platform, functional primitives. It serves the same need as HBOOK and its descendants&mdash; summarizing a large dataset with discretized distributions&mdash; but it does so using lambda functions and composition rather than a restrictive set of histogram types.</p>
 
-<p>For instance, to book and fill a histogram in <a href="http://root.cern.ch/">ROOT</a>, you would do this:</p>
+<p>For instance, to book and fill a histogram in <a href="http://root.cern.ch/">ROOT</a>, you would do the following:</p>
 
 <pre><code>histogram = ROOT.TH1F("name", "title", 100, 0, 10)
 for muon in muons:
     if muon.pt > 10:
         histogram.fill(muon.mass)</code></pre>
 
-<p>But in histogrammar, you could do it like this:</p>
+<p>In histogrammar, you would do it like this:</p>
 
 <pre><code>histogram = Select(lambda mu: mu.pt > 10,
                 Bin(100, 0, 10, lambda mu: mu.mass,
@@ -79,62 +79,54 @@ for muon in muons:
 for muon in muons:
     histogram.fill(muon)</code></pre>
 
-<p>because a filtered histogram is just a selection on binned counting. To accumulate means and standard deviations of track quality in each bin instead of counting (a "profile plot" instead of a 1-d histogram), you'd change the <code>Count</code> to <code>Deviate</code> and leave everything else the same:</p>
+<p>because ROOT's <code>TH1F</code> is just a selection on binned counts. To accumulate something else in each bin, such as mean and standard deviation (a &ldquo;profile plot&rdquo;), you'd change the <code>Count</code> to <code>Deviate</code> and leave everything else the same.</p>
 
 <pre><code>histogram = Select(lambda mu: mu.pt > 10,
                 Bin(100, 0, 10, lambda mu: mu.mass,
                     Deviate(lambda mu: mu.trackQuality)))</code></pre>
 
-<p>To make a 2-d histogram of <code>px</code> and <code>py</code> instead of a 1-d histogram, you'd do</p>
+<p>To make a 2-d histogram of <code>px</code> and <code>py</code>, you'd simply nest the <code>Bin</code> primitives.</p>
 
 <pre><code>histogram = Bin(100, 0, 50, lambda mu: mu.px,
                 Bin(100, 0, 50, lambda mu: mu.py,
                     Count()))</code></pre>
 
-<p>because now the content of each bin is another histogram (the x slices). And so on. A good set of primitives and the right lambda functions can replace specialized logic in the for loop. All of the above would be filled with exactly the same loop:</p>
+<p>Now the content of each bin is another histogram (the x slices). And so on. A good set of primitives can generate any kind of aggregation you need.</p>
+
+<p>Histogrammar primitives are designed for distributed computing (they are all order-independent commutative monoids) and cross-platform compatibility (all languages produce the same JSON). As a data analyst, you just express your data aggregation in terms of nested Histogrammar primitives and pass it to any system for evaluation. Since all of the logic of what to fill is encoded in your lambda functions, the aggregation phase is automatic.</p>
 
 <pre><code>for muon in muons:
     histogram.fill(muon)</code></pre>
 
 <h3 style="margin-top: 20px;">Benefits</h3>
 
-<p>Moving specialized logic out of the for loop allows the physicist to describe an entire analysis declaratively, in subdirectories like:</p>
+<p>Moving the logic of data analysis out of the for loop allows the analyst to describe an entire analysis declaratively. A whole analysis can be wrapped up in subdirectories like</p>
 
-<pre><code>Label(dir1 = Label(hist1 = Bin(...),
-                   hist2 = Bin(...)),
-      dir2 = ...)</code></pre>
+<pre><code>Label(
+    dir1 = Label(
+        hist1 = Bin(...),
+        hist2 = Bin(...)),
+    dir2 = ...)</code></pre>
 
-<p>This tree expresses what the physicist wants to aggregate and how they want to cut it up. The actual aggregation can be performed by an automated system that handles indexing, parallelization, and merging partial results. Each primitive has a custom <code>fill</code> method and a <code>+</code> operator for (mutable) aggregating and (immutable) merging, which fits perfectly into Spark's <code>aggregate</code> functional, Hadoop's <code>reduce</code>, an SQL aggregation function, parallel processing on GPUs, etc. It makes analysis code independent of the system where data are analyzed.</p>
+<p>This tree gets filled the same way as a single histogram, because the <code>Label</code> collection is a primitive just like <code>Bin</code> and <code>Count</code>.</p>
 
-<p>In addition, it formalizes the analysis so that it can be inspected algorithmically. At any level, the cuts applied to a particular histogram can be inferred by tracing the primitives from the root of the tree to that histogram. Named functions provide bookkeeping, so that a quantity and its label are defined in one place, allowing units to be changed across a suite of plots with a localized code change, reducing errors.</p>
+<p>Thus, analysis code is now independent of where the data are analyzed. This is especially helpful for aggregating data in &ldquo;hard to reach&rdquo; places: across a distributed system like Apache Spark, on a GPU coprocessor, or through a thin bandwidth connection.</p>
+
+<p>In addition, expressing an analysis this way formalizes it so that it can be inspected algorithmically. At any level, the cuts applied to a particular histogram can be inferred by tracing the primitives from the root of the tree to that histogram. Named functions provide bookkeeping, such that a quantity and its label are defined in one place to reduce errors when the units are changed.</p>
 
 <h3>Scope</h3>
 
-<p>Histogrammar aggregates data but does not produce plots (much like HBOOK, which had an associated HPLOT for 1970's era line printers). Histogrammar has extensions to pass its aggregated data to many different plotting libraries.</p>
+<p>Histogrammar aggregates data but does not produce plots (much like HBOOK, which had an associated HPLOT for 1970's era line printers). Histogrammar has front-end extensions to pass its aggregated data to many different plotting libraries.</p>
 
-<p>A user can therefore aggregate data in a hard-to-reach place, such as an intermediate value in a GPU calculation or on a remote supercomputer, bring back the aggregated data as JSON, and then plot it in their favorite package. Aggregation and plotting are separate, so that changing the color of axis tickmarks doesn't require re-running the analysis code.</p>
+<p>Histogrammar also has back-end extensions for aggregating data from different frameworks. It can therefore be thought of as a common language for aggregating and then plotting data, so that every plotting library doesn't have to have individual hooks for every kind of aggregation system. As a language, it represents aggregated data in a way that doesn't have to be recomputed for trivial changes in visualization, such as changing the color of axis tickmarks.</p>
 
-<h3>Status and Documentation</h3>
+<h3>More information</h3>
 
-<h4>For developers</h4>
+<p>Users should see <a href="docs">histogrammar.org/docs</a> (below) for tutorials, examples, and reference documentation. In particular, this site provides <a href="docs/install">installation instructions</a>.</p>
 
-<p><a href="https://github.com/diana-hep/histogrammar/wiki">See the wiki</a> for communication among the Histogrammar developers, which includes fine-grained status updates and future goals. <a href="http://travis-ci.org/diana-hep/histogrammar">Travis-CI</a> shows the current state of the build and unit tests.</p>
+<p>Developers should see <a href="http://github.com/histogrammar">the GitHub repository</a> and <a href="http://github.com/histogrammar/histogrammar-multilang/wiki">its wiki</a>, which has fine-grained status updates and future goals. <a href="http://travis-ci.org/histogrammar">Travis-CI</a> shows the current state of the build and unit tests.</p>
 
-<h4>For users</h4>
-
-<p>The average user should go to <a href="http://histogrammar.org/docs">histogrammar.org/docs</a> for tutorials, examples, and reference documentation.</p>
-
-<p>Developers and users should both report errors on the <a href="http://github.com/diana-hep/histogrammar/issues">GitHub issues tab</a>.</p>
-
-<h4>Installation</h4>
-
-<p>Histogrammar will someday be available in popular repositories, such as Maven Central (for Java/Scala), PyPI (for Python), CRAN (for R), npm (for Javascript), etc. For now, use the <a href="http://github.com/diana-hep/histogrammar/releases">GitHub releases tab</a> to get a fixed release or clone this repository to get the bleeding edge.</p>
-
-<p><a href="http://histogrammar.org/docs/install">Installation instructions</a> are available on the user documentation site.</p>
-
-<h3>The last word</h3>
-
-<p>Histogrammar is no longer in an experimental state: it may be used in real data analyses with caution. Please let us know if anything doesn't work or doesn't make sense!</p>
+<p>Developers and users should both report errors in <a href="http://github.com/histogrammar">GitHub</a>.</p>
 
 		</div>
 	</div>
@@ -148,8 +140,8 @@ for muon in muons:
 </div>
 
 <div id="right-screenshot" style="text-align: center; display: inline-block; margin-left: 10px;">
-<h3 style="margin-bottom: 10px;"><a href="https://github.com/diana-hep/histogrammar" style="text-decoration: none;">GitHub</a></h3>
-<p><a href="https://github.com/diana-hep/histogrammar"><img src="images/github.png" alt="GitHub" style="height: 125px; padding: 5px; border: 2px solid #2d3e4f;"></a></p>
+<h3 style="margin-bottom: 10px;"><a href="https://github.com/histogrammar" style="text-decoration: none;">GitHub</a></h3>
+<p><a href="https://github.com/histogrammar"><img src="images/github.png" alt="GitHub" style="height: 125px; padding: 5px; border: 2px solid #2d3e4f;"></a></p>
 </div>
 
 	</div>
