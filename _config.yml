@@ -33,7 +33,7 @@ feedback_email: pivarski@fnal.gov
 
 # feedback_disable: true
 # feedback_text: "Issues?"
-# feedback_link: "http://github.com/diana-hep/histogrammar/issues"
+# feedback_link: "http://github.com/histogrammar/histogrammar-multilang/issues"
 # change feedback link behaviour if you use a support ticketing system or something else
 
 highlighter: rouge

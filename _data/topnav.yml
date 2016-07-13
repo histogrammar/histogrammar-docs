@@ -17,8 +17,8 @@ topnav:
 topnav_github:
 - title: GitHub
   items:
-    - title: GitHub repo
-      external_url: http://github.com/diana-hep/histogrammar
+    - title: GitHub repos
+      external_url: http://github.com/histogrammar
 
 #Topnav dropdowns
 topnav_dropdowns:
