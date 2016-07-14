@@ -342,17 +342,14 @@ Notice that this last example has negative indexes (print `hist2d.bins.keys()`) 
 Histogrammar has a few other binning methods:
 
    * `CentrallyBin`: a fixed set of irregularly spaced bins, defined by _bin centers._ Specifying the irregularly spaced bins by their centers has two nice features: no gaps and no underflow/overflow. It has an analogy with one-dimensional clustering. As of Histogrammar version 0.7, an automated translation to ROOT has not been defined.
-   * `AdaptivelyBin`: the ultimate binning method for when you know nothing about the distribution: you specify a maximum number of bins and it adapts irregular bin centers to fit. It uses a one-dimensional clusering algrithm to adjust the bin centers, and the maximum memory use is finite (capped by the maximum number of bins). As of Histogrammar version 0.7, however, an automated translation to ROOT has not been defined.
-   * `Partition`: could be used for irregularly spaced bins defined by _bin edges,_ though it was intended for groups of plots with different cuts (such as a series of different pseudorapidity cuts or heavy ion centrality bins).
+   * `IrregularlyBin`: could be used for irregularly spaced bins defined by _bin edges,_ though it was intended for groups of plots with different cuts (such as a series of different pseudorapidity cuts or heavy ion centrality bins).
    * `Categorize`: like `SparselyBin`, but with string-valued categories, rather than numbers. A histogram over a categorical domain is also known as a "bar chart." There's a certain program that excels at these.
-
-Although `SparselyBin` requires more a priori knowledge (the bin width) than `AdaptivelyBin`, the fixed bin width and alignment of bins with round numbers are very useful in an analysis.
 
 All of these are aggregators "of the second kind" in [the specification](../../specification).
 
 ### Structures made of histograms
 
-If "first kind" primitives like `Count`, `Average`, and `Deviate` are like stars and binning methods like `Bin`, `SparselyBin`, and `AdaptivelyBin` are like clusters of stars, there are yet larger structures like galaxies and galactic clusters. Some of the things we do in an analysis involve a coordinated use of multiple histograms.
+If "first kind" primitives like `Count`, `Average`, and `Deviate` are like stars and binning methods like `Bin`, `SparselyBin`, and `Categorize` are like stellar clusters, there are yet larger structures like galaxies and galactic clusters. Some of the things we do in an analysis involve a coordinated use of multiple histograms.
 
 One of the most common is an efficiency plot: the probability of passing a cut as a function of some binned variable. You could make this by filling two histograms, one with the cut, the other without, and then dividing them, but Histogrammar has a built-in primitive:
 
@@ -403,7 +400,7 @@ for i, event in enumerate(events):
 print(frac.numerator.entries / frac.denominator.entries)
 ```
 
-Another of these superstructures is a suite of stacked or overlaid histograms. The `Stack` and `Partition` primitives can both be thought of as extensions of `Fraction`. Whereas `Fraction` fills two sub-aggregators, one if a selection is satisfied and the other regardless, `Stack` fills _N + 1_ sub-aggregators, each with the events that pass _N_ successively tighter cuts.
+Another of these superstructures is a suite of stacked or overlaid histograms. The `Stack` and `IrregularlyBin` primitives can both be thought of as extensions of `Fraction`. Whereas `Fraction` fills two sub-aggregators, one if a selection is satisfied and the other regardless, `Stack` fills _N + 1_ sub-aggregators, each with the events that pass _N_ successively tighter cuts.
 
 ```python
 stack = Stack([5, 10, 15, 20], lambda event: event.numPrimaryVertices,
@@ -486,7 +483,7 @@ roothist.Draw()
 
 (The first order was better.)
 
-Getting back to the relationship between `Fraction`, `Stack`, and `Partition`, a `Fraction` is just a `Stack` with one cut. That is,
+Getting back to the relationship between `Fraction`, `Stack`, and `IrregularlyBin`, a `Fraction` is just a `Stack` with one cut. That is,
 
 ```python
 frac = Fraction(lambda event: event.numPrimaryVertices > 5,
@@ -503,24 +500,24 @@ frac = Stack([5], lambda event: event.numPrimaryVertices,
 # numerator is frac.values[1]
 ```
 
-So what's `Partition`? An event that satisfies a `Stack` threshold fills all sub-aggregators up to and including that one. Each sub-aggregator in the list covers a subinterval of the previous one. As a Venn diagram, the domains the sub-aggregators in a `Stack` cover would look like this:
+So what's `IrregularlyBin`? An event that satisfies a `Stack` threshold fills all sub-aggregators up to and including that one. Each sub-aggregator in the list covers a subinterval of the previous one. As a Venn diagram, the domains the sub-aggregators in a `Stack` cover would look like this:
 
 ![Venn diagram of ](stack_venn.png)
 
-An event that satisfies a `Partition` threshold fills exactly one sub-aggregator: their domains partition the space with a Venn diagram that looks like this:
+An event that satisfies a `IrregularlyBin` threshold fills exactly one sub-aggregator: their domains partition the space with a Venn diagram that looks like this:
 
 ![Venn diagram of ](partition_venn.png)
 
-After filling, you simply overlay the plots. The `Stack` is guaranteed to not overlap because the first (back) histogram contains all events, the next contains a subset, etc. The plots of a `Partition` may overlap, but each represents a distinct set of events.
+After filling, you simply overlay the plots. The `Stack` is guaranteed to not overlap because the first (back) histogram contains all events, the next contains a subset, etc. The plots of a `IrregularlyBin` may overlap, but each represents a distinct set of events.
 
-Here is a real-world use of `Stack` and `Partition`. You might want to compare the momenta of muons measured by different parts of the detector (these cuts on pseudorapidity (`eta`) correspond to qualitatively different parts of the CMS detector, which is where these data originated).
+Here is a real-world use of `Stack` and `IrregularlyBin`. You might want to compare the momenta of muons measured by different parts of the detector (these cuts on pseudorapidity (`eta`) correspond to qualitatively different parts of the CMS detector, which is where these data originated).
 
 ```python
 stack = Stack([0.8, 1.2, 1.7], lambda muon: abs(muon.eta),
               Bin(50, 0, 200, lambda muon: muon.p))
 
-partition = Partition([0.8, 1.2, 1.7], lambda muon: abs(muon.eta),
-                      Bin(50, 0, 200, lambda muon: muon.p))
+partition = IrregularlyBin([0.8, 1.2, 1.7], lambda muon: abs(muon.eta),
+                           Bin(50, 0, 200, lambda muon: muon.p))
 
 events = EventIterator()
 for i, event in enumerate(events):
@@ -547,13 +544,13 @@ for i, h in enumerate(rootpartition.values()):
 rootpartition.Draw()
 ```
 
-![Partitioned muon momentum plots](muons_partitioned.png)
+![IrregularlyBinned muon momentum plots](muons_partitioned.png)
 
-A `Partition` could also be used to define a single, irregularly binned histogram by bin edges (as opposed to `CentrallyBin`, which uses bin centers). Just replace the sub-aggregator with `Count()`.
+A `IrregularlyBin` could also be used to define a single, irregularly binned histogram by bin edges (as opposed to `CentrallyBin`, which uses bin centers). Just replace the sub-aggregator with `Count()`.
 
 ```python
-histogram = Partition([-2.4, -1.7, -1.2, -0.8, 0.0, 0.8, 1.2, 1.7, 2.4],
-                      lambda muon: muon.eta, Count())
+histogram = IrregularlyBin([-2.4, -1.7, -1.2, -0.8, 0.0, 0.8, 1.2, 1.7, 2.4],
+                           lambda muon: muon.eta, Count())
 
 for i, event in enumerate(events):
     if i == 1000: break
@@ -568,7 +565,7 @@ print(histogram.cuts)
 
 The first bin, for which `muon.eta` is at least minus infinity, has 1 muon. The next, which starts at &ndash;2.4 (the approximate edge of the detector), has 70 muons, continuing up to the last bin, which starts at 2.4 (the other edge of the detector), which also has 1 spurious muon. The first and last bins may be thought of as underflow and overflow because they extend to negative and positive infinity, or they may be treated as ordinary bins. The same is true of the first and last bins in a `CentrallyBin`.
 
-Although this use of `Partition` is not how it was originally intended, it is perfectly valid and should someday have an automated conversion to irregularly binned ROOT histograms. You should think of these primitives as your building blocks, provided to construct whatever statistic you need, and handle converting it to a visualization later.
+Although this use of `IrregularlyBin` is not how it was originally intended, it is perfectly valid and should someday have an automated conversion to irregularly binned ROOT histograms. You should think of these primitives as your building blocks, provided to construct whatever statistic you need, and handle converting it to a visualization later.
 
 ## Cuts and other adapters
 
@@ -611,29 +608,13 @@ Moreover, what if you're distributing your analysis with PySpark, or acceleratin
 
 The way to think of building an analysis out of primitives is by thinking of each as an "adapter," like the plugs in a VCR or stereo. `Select` is a plug that applies a cut, but does nothing else. `Bin` splits a continuous interval, sending data into one of its sub-aggregators, etc.
 
-Here's another: `Branch` splits the data stream into _N_ copies, sending the data into all of its sub-aggregators. Suppose that we want to compute the minimum, first quartile, median, third quartile, and maximum of each bin in a histogram? We'd do that like this:
+Here's another: `Branch` splits the data stream into _N_ copies, sending the data into all of its sub-aggregators. Suppose that we want to collect the sum of squared weights in addition to the weights&mdash; we can do that by putting yet more aggregators in each bin of the histogram:
 
 ```python
-metpt = lambda event: event.met.pt
-
-box_and_whiskers =
+profSumW2 =
     Bin(20, 0.5, 20.5, lambda event: event.numPrimaryVertices,
-        Branch(Minimize(metpt),
-               Quantile(0.25, metpt),
-               Quantile(0.5, metpt),
-               Quantile(0.75, metpt),
-               Maximize(metpt)))
-```
-
-This is known as a [box-and-whikers plot](http://en.wikipedia.org/wiki/Box_plot) in R and a candle plot in ROOT. It is used in place of a profile plot if the contents of each bin are general distributions, rather than roughly Gaussian.
-
-Or maybe you want to make a residuals plot with ordinary least squares and mean absolute errors for comparison:
-
-```python
-residuals =
-    Bin(100, -10, 10, lambda hit: hit.position,
-        Branch(Deviate(lambda hit: hit.residual),
-               AbsoluteErr(lambda hit: hit.residual)))
+        Branch(Deviate(lambda event: event.met.pt),
+               Count(lambda weight: weight**2)))
 ```
 
 You would need to write the code that extracts the data from these containers and plots them in ROOT since you're the only one who knows how you want to visualize them. But if you have already experienced a need for non-standard aggregations, you've been writing this kind of code already. ROOT histograms are manually filled with `SetBinContent`.
