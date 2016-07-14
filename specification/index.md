@@ -123,7 +123,7 @@ identity = lambda x: x
 
 def fill(counting, datum, weight):
     if weight > 0.0:
-        counting.entries += self.transform(weight)
+        counting.entries += counting.transform(weight)
 
 def combine(one, two):
     return Count.ed(one.entries + two.entries)
@@ -309,7 +309,7 @@ def fill(deviating, datum, weight):
 
         if math.isnan(deviating.mean) or math.isnan(q):
             deviating.mean = float("nan")
-            deviating.varianceTimesEntries = float("nan")
+            varianceTimesEntries = float("nan")
 
         elif math.isinf(deviating.mean) or math.isinf(q):
             if math.isinf(deviating.mean) and math.isinf(q) and deviating.mean * q < 0.0:
@@ -322,7 +322,7 @@ def fill(deviating, datum, weight):
                 deviating.mean = float("nan") # non-finite denominator is bad
 
             # any infinite value makes the variance NaN
-            deviating.varianceTimesEntries = float("nan")
+            varianceTimesEntries = float("nan")
 
         else:                                 # handle finite case
             delta = q - deviating.mean
@@ -335,14 +335,20 @@ def fill(deviating, datum, weight):
 def combine(one, two):
     entries = one.entries + two.entries
     if entries == 0.0:
-        mean = (one.mean + two.mean) / entries
+        mean = (one.mean + two.mean) / 2.0
     else:
         mean = (one.entries*one.mean + two.entries*two.mean) / entries
+
     varianceTimesEntries = one.entries*one.variance + two.entries*two.variance \
                            + one.entries*one.mean**2 + two.entries*two.mean**2 \
                            - 2.0*mean*(one.entries*one.mean + two.entries*two.mean) \
                            + entries*mean**2
-    variance = varianceTimesEntries / entries
+
+    if entries == 0.0:
+        variance = varianceTimesEntries
+    else:
+        variance = varianceTimesEntries / entries
+
     return Deviate.ed(entries, mean, variance)
 ```
 
@@ -490,7 +496,106 @@ JSON object containing
  "data": {"entries": 123.0, "max": 3.14, "name": "myfunc"}}
 ```
 
-# Second kind: group data by a quantity and pass to sub-aggregators
+## **Bag:** accumulate values for scatter plots
+
+Accumulate raw numbers, vectors of numbers, or strings, with identical values merged.
+
+A bag is the appropriate data type for scatter plots: a container that collects raw values, maintaining multiplicity but not order. (A "bag" is also known as a "multiset.") Conceptually, it is a mapping from distinct raw values to the number of observations: when two instances of the same raw value are observed, one key is stored and their weights add.
+
+Although the user-defined function may return scalar numbers, fixed-dimension vectors of numbers, or categorical strings, it may not mix types. Different Bag primitives in an analysis tree may collect different types.
+
+Consider using Bag with [Limit](#limit-keep-detail-until-entries-is-large) for collections that roll over to a mere count when they exceed a limit.
+
+### Bagging constructor and required members
+
+```python
+Bag.ing(quantity)
+```
+  * `quantity` (function returning a double, a vector of doubles, or a string) computes the quantity of interest from the data.
+  * `entries` (mutable double) is the number of entries, initially 0.0.
+  * `values` (mutable map from quantity return type to double) is the number of entries for each unique item.
+
+### Bagged constructor and required members
+
+```python
+Bag.ed(entries, values)
+```
+
+  * `entries` (double) is the number of entries.
+  * `values` (map from double, vector of doubles, or string to double) is the number of entries for each unique item.
+
+### Fill and combine algorithms
+
+```python
+def fill(bagging, datum, weight):
+    if weight > 0.0:
+        q = bagging.quantity(datum)
+        bagging.entries += weight
+        if q in bagging.values:
+            bagging.values[q] += weight
+        else:
+            bagging.values[q] = weight
+
+def combine(one, two):
+    entries = one.entries + two.entries
+    values = {}
+    for v in set(one.values.keys()).union(set(two.values.keys())):
+        if v in one.values and v in two.values:
+            values[v] = combine(one.values[v], two.values[v])
+        elif v in one.values:
+            values[v] = one.values[v].copy()
+        elif v in two.values:
+            values[v] = two.values[v].copy()
+    return Bag.ed(entries, values)
+```
+
+### JSON format
+
+JSON object containing
+
+  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `values` (JSON array of JSON objects containing `w` (JSON number), the total weight of entries for a unique value and `v` (JSON number, array of numbers, or string), the value); canonical form is sorted by `v` (lexicographically)
+  * optional `name` (JSON string), name of the `quantity` function, if provided.
+
+**Examples:**
+
+```json
+{"type": "Bag",
+ "data": {
+   "entries": 123.0,
+   "values": [
+     {"w": 23.0, "v": -999.0},
+     {"w": 20.0, "v": -4.0},
+     {"w": 20.0, "v": -2.0},
+     {"w": 30.0, "v": 0.0},
+     {"w": 30.0, "v": 2.0}]}}
+```
+
+```json
+{"type": "Bag",
+ "data": {
+   "entries": 123.0,
+   "values": [
+     {"w": 23.0, "v": [1.0, 2.0, 3.0]},
+     {"w": 20.0, "v": [3.14, 3.14, 3.14]},
+     {"w": 20.0, "v": [99.0, 50.0, 1.0]},
+     {"w": 30.0, "v": [7.0, 2.2, 9.8]},
+     {"w": 30.0, "v": [33.3, 66.6, 99.9]}]}}
+```
+
+```json
+{"type": "Bag",
+ "data": {
+   "entries": 123.0,
+   "values": [
+     {"w": 23.0, "v": "five"},
+     {"w": 20.0, "v": "four"},
+     {"w": 20.0, "v": "one"},
+     {"w": 30.0, "v": "three"},
+     {"w": 30.0, "v": "two"}]}}
+```
+
+# Second kind: pass to sub-aggregators based on data
 
 ## **Bin:** regular binning for histograms
 
@@ -759,8 +864,6 @@ Split a quantity into bins defined by irregularly spaced bin centers, with exact
 
 Unlike irregular bins defined by explicit ranges, irregular bins defined by bin centers are guaranteed to fully partition the space with no gaps and no overlaps. It could be viewed as cluster scoring in one dimension.
 
-The first and last bins cover semi-infinite domains, so it is unclear how to interpret them as part of the probability density function (PDF). Finite-width bins approximate the PDF in piecewise steps, but the first and last bins could be taken as zero (an underestimate) or as uniform from the most extreme point to the inner bin edge (an overestimate, but one that is compensated by underestimating the region just beyond the extreme point). For the sake of the latter interpretation, the minimum and maximum values are accumulated along with the bin values.
-
 ### CentrallyBinning constructor and required members
 
 ```python
@@ -773,19 +876,15 @@ CentrallyBin.ing(centers, quantity, value=Count.ing(), nanflow=Count.ing())
   * `nanflow` (present-tense aggregator) is a sub-aggregator to use for data whose quantity is NaN.
   * `entries` (mutable double) is the number of entries, initially 0.0.
   * `bins` (list of double, present-tense aggregator pairs) are the bin centers and sub-aggregators in each bin.
-  * `min` (mutable double) is the lowest value of the quantity observed, initially NaN.
-  * `max` (mutable double) is the highest value of the quantity observed, initially NaN.
 
 ### CentrallyBinned constructor and required members
 
 ```python
-CentrallyBin.ed(entries, bins, min, max, nanflow)
+CentrallyBin.ed(entries, bins, nanflow)
 ```
 
   * `entries` (double) is the number of entries.
   * `bins` (list of double, past-tense aggregator pairs) is the list of bin centers and their accumulated data.
-  * `min` (double) is the lowest value of the quantity observed or NaN if no data were observed.
-  * `max` (double) is the highest value of the quantity observed or NaN if no data were observed.
   * `nanflow` (past-tense aggregator) is the filled nanflow bin.
 
 ### Fill and combine algorithms
@@ -800,10 +899,6 @@ def fill(centrallybinning, datum, weight):
             dist, closest = min((abs(c - q), v) for c, v in centrallybinning.bins)
             fill(closest, datum, weight)
         centrallybinning.entries += weight
-        if math.isnan(centrallybinning.min) or q < centrallybinning.min:
-            centrallybinning.min = q
-        if math.isnan(centrallybinning.max) or q > centrallybinning.max:
-            centrallybinning.max = q
 
 def combine(one, two):
     if set(one.centers) != set(two.centers):
@@ -814,26 +909,8 @@ def combine(one, two):
         v2 = [v for c2, v in two.bins if c1 == c2][0]
         bins.append((c1, combine(v1, v2)))
 
-    if math.isnan(one.min):
-        min = two.min
-    elif math.isnan(two.min):
-        min = one.min
-    elif one.min < two.min:
-        min = one.min
-    else:
-        min = two.min
-
-    if math.isnan(one.max):
-        max = two.max
-    elif math.isnan(two.max):
-        max = one.max
-    elif one.max > two.max:
-        max = one.max
-    else:
-        max = two.max
-
     nanflow = combine(one.nanflow, two.nanflow)
-    return CentrallyBin.ed(entries, bins, min, max, nanflow)
+    return CentrallyBin.ed(entries, bins, nanflow)
 ```
 
 ### JSON format
@@ -843,8 +920,6 @@ JSON object containing
   * `entries` (JSON number, "nan", "inf", or "-inf")
   * `bins:type` (JSON string), name of the bins sub-aggregator type
   * `bins` (JSON array of JSON objects containing `center` (JSON number) and `value` (sub-aggregator)), collection of bin centers and their associated data
-  * `min` (JSON number, "nan", "inf", or "-inf")
-  * `max` (JSON number, "nan", "inf", or "-inf")
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -865,14 +940,12 @@ JSON object containing
      {"center": 2.0, "value": 30.0},
      {"center": 4.0, "value": 30.0},
      {"center": 12345.0, "value": 8.0}],
-   "min": -999.0,
-   "max": 12345.0,
    "nanflow:type": "Count",
    "nanflow": 0.0,
    "name": "myfunc"}}
 ```
 
-Note that the bins type does not apply to `min` and `max` because they quantify the domain, not the range. Here is an example with `Average` sub-aggregators:
+Here is an example with `Average` sub-aggregators:
 
 ```json
 {"type": "CentrallyBin",
@@ -887,8 +960,6 @@ Note that the bins type does not apply to `min` and `max` because they quantify 
      {"center": 2.0, "value": 20.0, "mean": 16.19},
      {"center": 4.0, "value": 30.0, "mean": 4.23},
      {"center": 12345.0, "value": 8.0, "mean": -1.0}],
-   "min": -999.0,
-   "max": 12345.0,
    "nanflow:type": "Count",
    "nanflow": 0.0,
    "name": "myfunc",
@@ -1492,7 +1563,7 @@ JSON object containing
    "data": null}}
 ```
 
-# Third kind: pass to all sub-aggregators
+# Third kind: pass to every sub-aggregator
 
 ## **Label:** directory with string-based keys
 
@@ -1819,107 +1890,6 @@ JSON object containing
        "overflow": 8.0,
        "nanflow:type": "Count",
        "nanflow": 0.0}}]}}
-```
-
-# Fourth kind: collect sets of raw data
-
-## **Bag:** accumulate values for scatter plots
-
-Accumulate raw numbers, vectors of numbers, or strings, with identical values merged.
-
-A bag is the appropriate data type for scatter plots: a container that collects raw values, maintaining multiplicity but not order. (A "bag" is also known as a "multiset.") Conceptually, it is a mapping from distinct raw values to the number of observations: when two instances of the same raw value are observed, one key is stored and their weights add.
-
-Although the user-defined function may return scalar numbers, fixed-dimension vectors of numbers, or categorical strings, it may not mix types. Different Bag primitives in an analysis tree may collect different types.
-
-Consider using Bag with [Limit](#limit-keep-detail-until-entries-is-large) for collections that roll over to a mere count when they exceed a limit.
-
-### Bagging constructor and required members
-
-```python
-Bag.ing(quantity)
-```
-  * `quantity` (function returning a double, a vector of doubles, or a string) computes the quantity of interest from the data.
-  * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `values` (mutable map from quantity return type to double) is the number of entries for each unique item.
-
-### Bagged constructor and required members
-
-```python
-Bag.ed(entries, values)
-```
-
-  * `entries` (double) is the number of entries.
-  * `values` (map from double, vector of doubles, or string to double) is the number of entries for each unique item.
-
-### Fill and combine algorithms
-
-```python
-def fill(bagging, datum, weight):
-    if weight > 0.0:
-        q = bagging.quantity(datum)
-        bagging.entries += weight
-        if q in bagging.values:
-            bagging.values[q] += weight
-        else:
-            bagging.values[q] = weight
-
-def combine(one, two):
-    entries = one.entries + two.entries
-    values = {}
-    for v in set(one.values.keys()).union(set(two.values.keys())):
-        if v in one.values and v in two.values:
-            values[v] = combine(one.values[v], two.values[v])
-        elif v in one.values:
-            values[v] = one.values[v].copy()
-        elif v in two.values:
-            values[v] = two.values[v].copy()
-    return Bag.ed(entries, values)
-```
-
-### JSON format
-
-JSON object containing
-
-  * `entries` (JSON number, "nan", "inf", or "-inf")
-  * `values` (JSON array of JSON objects containing `w` (JSON number), the total weight of entries for a unique value and `v` (JSON number, array of numbers, or string), the value); canonical form is sorted by `v` (lexicographically)
-  * optional `name` (JSON string), name of the `quantity` function, if provided.
-
-**Examples:**
-
-```json
-{"type": "Bag",
- "data": {
-   "entries": 123.0,
-   "values": [
-     {"w": 23.0, "v": -999.0},
-     {"w": 20.0, "v": -4.0},
-     {"w": 20.0, "v": -2.0},
-     {"w": 30.0, "v": 0.0},
-     {"w": 30.0, "v": 2.0}]}}
-```
-
-```json
-{"type": "Bag",
- "data": {
-   "entries": 123.0,
-   "values": [
-     {"w": 23.0, "v": [1.0, 2.0, 3.0]},
-     {"w": 20.0, "v": [3.14, 3.14, 3.14]},
-     {"w": 20.0, "v": [99.0, 50.0, 1.0]},
-     {"w": 30.0, "v": [7.0, 2.2, 9.8]},
-     {"w": 30.0, "v": [33.3, 66.6, 99.9]}]}}
-```
-
-```json
-{"type": "Bag",
- "data": {
-   "entries": 123.0,
-   "values": [
-     {"w": 23.0, "v": "five"},
-     {"w": 20.0, "v": "four"},
-     {"w": 20.0, "v": "one"},
-     {"w": 30.0, "v": "three"},
-     {"w": 30.0, "v": "two"}]}}
 ```
 
 # Aliases: common compositions
