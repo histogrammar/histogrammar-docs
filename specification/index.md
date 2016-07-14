@@ -402,8 +402,8 @@ Minimize.ed(entries, min)
 ```python
 def fill(minimizing, datum, weight):
     if weight > 0.0:
-        q = quantity(datum)
-        entries += weight
+        q = minimizing.quantity(datum)
+        minimizing.entries += weight
         if math.isnan(minimizing.min) or q < minimizing.min:
             minimizing.min = q
 
@@ -463,8 +463,8 @@ Maximize.ed(entries, min)
 ```python
 def fill(maximizing, datum, weight):
     if weight > 0.0:
-        q = quantity(datum)
-        entries += weight
+        q = maximizing.quantity(datum)
+        maximizing.entries += weight
         if math.isnan(maximizing.max) or q > maximizing.max:
             maximizing.max = q
 
@@ -792,30 +792,27 @@ def fill(sparselybinning, datum, weight):
         if math.isnan(q):
             fill(sparselybinning.nanflow, datum, weight)
         else:
-            softbin = math.floor(binning.num * \
-                (q - binning.low) / (binning.high - binning.low))
-            if softbin < -(2**63 - 1):
+            softbin = (q - sparselybinning.origin) / sparselybinning.binWidth
+
+            if softbin <= -(2**63 - 1):
                 bin = -(2**63 - 1)
-            elif softbin > (2**63 - 1):
+            elif softbin >= (2**63 - 1):
                 bin = (2**63 - 1)
             else:
-                bin = long(softbin)
+                bin = int(math.floor(softbin))
 
-            if bin in binning.bins:
-                binning.bins[bin] = binning.value.copy()
-            fill(binning.bins[bin], datum, weight)
-            binning.entries += weight
+            if bin not in sparselybinning.bins:
+                sparselybinning.bins[bin] = sparselybinning.value.copy()
+
+            fill(sparselybinning.bins[bin], datum, weight)
+
+        sparselybinning.entries += weight
 
 def combine(one, two):
-    if one.binWidth != two.binWidth or one.origin != two.origin:
+    if one.binWidth != two.binWidth or one.origin != two.origin or one.contentType != two.contentType:
         raise Exception
     entries = one.entries + two.entries
-    if len(one.bins) > 0:
-        contentType = list(one.bins.values())[0].factory.name
-    elif len(two.bins) > 0:
-        contentType = list(two.bins.values())[0].factory.name
-    else:
-        contentType = one.contentType
+    contentType = one.contentType
     bins = {}
     for key in set(one.bins.keys()).union(set(two.bins.keys())):
         if key in one.bins and key in two.bins:
