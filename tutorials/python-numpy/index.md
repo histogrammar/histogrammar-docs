@@ -121,7 +121,7 @@ histogram.numpy(data)
 print histogram.numericalValues
 ```
 
-It's the same construction of Histogrammar primitives (just a `Bin` here, but it could have been any complex structure, excluding `AdaptivelyBin`.) What differs is the structure of the input data passed as arguments to the lambda functions and the return values of the lambda functions.
+It's the same construction of Histogrammar primitives (just a `Bin` here, but it could have been any complex structure.) What differs is the structure of the input data passed as arguments to the lambda functions and the return values of the lambda functions.
 
 In the pure Python case, we have a big list of individual rows and the lambda takes one row (`datum`) each time it is invoked (many times). In the Numpy case, we have a single dict of column arrays and the lambda takes the whole collection when it is invoked (once).
 
@@ -194,58 +194,18 @@ Here is a rough table of speedup factors (wall time for pure Python divided by w
 | [Count](../../specification/#count-sum-of-weights)                                  | ~100X                 | [Categorize](../../specification/#categorize-string-valued-bins-bar-charts)         | 1.5X             |
 | [Sum](../../specification/#sum-sum-of-a-given-quantity)                             | 40-100X               | [Fraction](../../specification/#fraction-efficiency-plots)                          | 4-20X (100 bins) |
 | [Average](../../specification/#average-mean-of-a-quantity)                          | 40-100X               | [Stack](../../specification/#stack-cumulative-filling)                              | 2-12X (10 plots) |
-| [Deviate](../../specification/#deviate-mean-and-variance)                           | 40-80X                | [Partition](../../specification/#partition-exclusive-filling)                       | 1-4X (10 plots)  |
-| [AbsoluteErr](../../specification/#absoluteerr-mean-absolute-error)                 | 40-100X               | [Select](../../specification/#select-apply-a-cut)                                   | 4-20X (100 bins) |
+| [Deviate](../../specification/#deviate-mean-and-variance)                           | 40-80X                | [Select](../../specification/#select-apply-a-cut)                                   | 4-20X (100 bins) |
 | [Minimize](../../specification/#minimize-minimum-value)                             | 50-150X               | [Limit](../../specification/#limit-keep-detail-until-entries-is-large)              | pass-through     |
 | [Maximize](../../specification/#maximize-maximum-value)                             | 50-150X               | [Label](../../specification/#label-directory-with-string-based-keys)                | pass-through     |
-| [Quantile](../../specification/#quantile-such-as-median-quartiles-quintiles-etc)    | 1-5X                  | [UntypedLabel](../../specification/#untypedlabel-directory-of-different-types)      | pass-through     |
-| [Bin](../../specification/#bin-regular-binning-for-histograms)                      | 5-25X (for 100 bins)  | [Index](../../specification/#index-list-with-integer-keys)                          | pass-through     |
-| [SparselyBin](../../specification/#sparselybin-ignore-zeros)                        | 4-5X (about 100 bins) | [Branch](../../specification/#branch-tuple-of-different-types)                      | pass-through     |
-| [CentrallyBin](../../specification/#centrallybin-irregular-but-fully-partitioning)  | 25-40X (10 bins)      | [Bag](../../specification/#bag-accumulate-values-for-scatter-plots)                 | 1.5-2X           |
-| [AdaptivelyBin](../../specification/#adaptivelybin-for-unknown-distributions)       | _not possible!_       | [Sample](../../specification/#sample-reservoir-sampling)                            | 1-1.5X           |
+| [Bin](../../specification/#bin-regular-binning-for-histograms)                      | 5-25X (for 100 bins)  | [UntypedLabel](../../specification/#untypedlabel-directory-of-different-types)      | pass-through     |
+| [SparselyBin](../../specification/#sparselybin-ignore-zeros)                        | 4-5X (about 100 bins) | [Index](../../specification/#index-list-with-integer-keys)                          | pass-through     |
+| [CentrallyBin](../../specification/#centrallybin-fully-partitioning-with-centers)   | 25-40X (10 bins)      | [Branch](../../specification/#branch-tuple-of-different-types)                      | pass-through     |
+| [IrregularlyBin](../../specification/#irregularlybin-fully-partitioning-with-edges) | 1-4X (10 plots)       | [Bag](../../specification/#bag-accumulate-values-for-scatter-plots)                 | 1.5-2X           |
 
 **Some caveats:**
 
    * `Count` cannot be used alone in Numpy because it does not extract a quantity, a one-dimensional array to examine and get the length. `Counts` embedded in primitives that extract quantities are fine because those other primitives determine (and assert!) the lengths of the arrays.
-   * `Quantile` is an order-dependent algorithm. Without an implementation compiled into Numpy, it can't be computed in a column-by-column way. This implementation extracts the array and feeds it through the standard row-by-row implementation, which is why it has almost no speedup.
    * `Bin` has a wide range of speedups because some cases can use `numpy.histogram` and others can't. (See above.)
-   * `AdaptivelyBin` is just impossible: aggregators containing `AdaptivelyBin` cannot be used with Numpy. The reason is that it is an order-dependent algorithm that contains sub-aggregators. These sub-aggregators don't even retain their identities as they get merged with incoming data. It wouldn't be possible to feed data from the array into them, as in the case of `Quantile`.
-   * `Categorize` operates on strings and builds a dictionary: not something you can do in Numpy. However, its sub-aggregators retain their identities, so we can play the data back to them, like `Quantile`.
+   * `Categorize` operates on strings and builds a dictionary: not something you can do in Numpy, so it falls back on the pure Python implementation.
    * `Label`, `UntypedLabel`, `Index`, and `Branch` are just containers; they pass the data along in the same way whether the data fill row-by-row or column-by-column.
-   * `Bag` and `Sample` defer to the row-by-row implementations, but `Sample` has the same kind of order-dependence as `Quantile` and `AdaptivelyBin`.
-
-## Insights on theory
-
-This exercise picked out an important theoretical consideration: the primitives that were hard or impossible to translate from a row-by-row implementation to a column-by-column implementation were the ones whose result depend on the order in which the data arrive: `Quantile`, `AdaptivelyBin`, and `Sample`. Their results differ if they are partitioned differently in a distributed workflow, but that was considered justified because they're all approximations anyway.
-
-This property is associativity (insensitivity to how the input data are partitioned, processed independently, and combined) and commutativity (insensitivity to the order of input). Associativity of an aggregator `h` can be demonstrated with
-
-```python
-h1 = h.copy()
-h2 = h.copy()
-h3 = h.copy()
-
-h1.numpy(data)
-h2.numpy(data)
-
-h3.numpy(data)
-h3.numpy(data)
-
-assert h1 + h2 == h3
-```
-
-and commutativity can be demonstrated with
-
-```python
-h1 = h.copy()
-h2 = h.copy()
-
-h1.numpy(data)
-h2.numpy(numpy.random.permutation(data))
-
-assert h1 == h2
-```
-
-`Quantile`, `AdaptivelyBin`, and `Sample` are the three primitives that fail these properties, so they're not perfectly reproducible in a distributed environment and they couldn't be implemented in Numpy (not implemented well for `Quantile` and `Sample`, not implemented at all for `AdaptivelyBin`, because it has sub-aggregators). Perhaps they should be excluded from the Histogrammar language on this basis.
-
-Perhaps I should have known that from the start, but going through this exercise showed how concrete the consequences of these mathematical properties are. It's not just a nicety.
+   * `Bag` defers to its pure Python implementation.

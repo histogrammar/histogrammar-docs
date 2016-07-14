@@ -613,18 +613,18 @@ The most useful aggregators are the following. Tinker with them to get familiar;
 **Simple counters:**
 
   * [`Count`](../../specification/#count-sum-of-weights): just counts. Every aggregator has an `entries` field, but `Count` _only_ has this field.
-  * [`Average`](../..//specification/#average-mean-of-a-quantity) and [`Deviate`](../..//specification/#deviate-mean-and-variance): add mean and variance, cumulatively.
-  * [`Minimize`](../..//specification/#minimize-minimum-value) and [`Maximize`](../..//specification/#maximize-maximum-value): lowest and highest value seen.
+  * [`Average`](../../specification/#average-mean-of-a-quantity) and [`Deviate`](../../specification/#deviate-mean-and-variance): add mean and variance, cumulatively.
+  * [`Minimize`](../../specification/#minimize-minimum-value) and [`Maximize`](../../specification/#maximize-maximum-value): lowest and highest value seen.
 
 **Histogram-like objects:**
 
-  * [`Bin`](../..//specification/#bin-regular-binning-for-histograms) and [`SparselyBin`](../..//specification/#sparselybin-ignore-zeros): split a numerical domain into uniform bins and redirect aggregation into those bins.
-  * [`Categorize`](../..//specification/#categorize-string-valued-bins-bar-charts): split a string-valued domain by unique values; good for making bar charts (which are histograms with a string-valued axis).
-  * [`Partition`](../..//specification/#partition-exclusive-filling): split a numerical domain into arbitrary subintervals, usually for separate plots like particle pseudorapidity or collision centrality.
+  * [`Bin`](../../specification/#bin-regular-binning-for-histograms) and [`SparselyBin`](../../specification/#sparselybin-ignore-zeros): split a numerical domain into uniform bins and redirect aggregation into those bins.
+  * [`Categorize`](../../specification/#categorize-string-valued-bins-bar-charts): split a string-valued domain by unique values; good for making bar charts (which are histograms with a string-valued axis).
+  * [`CentrallyBin`](#centrallybin-fully-partitioning-with-centers) and [`IrregularlyBin`](../../specification/#irregularlybin-fully-partitioning-with-edges): split a numerical domain into arbitrary subintervals, usually for separate plots like particle pseudorapidity or collision centrality.
 
 **Collections:**
 
-  * [`Label`](../../specification/#label-directory-with-string-based-keys), [`UntypedLabel`](../..//specification/#untypedlabel-directory-of-different-types), and [`Index`](../..//specification/#index-list-with-integer-keys): bundle objects with string-based keys (`Label` and `UntypedLabel`) or simply an ordered array (effectively, integer-based keys) consisting of a single type (`Label` and `Index`) or any types (`UntypedLabel`).
+  * [`Label`](../../specification/#label-directory-with-string-based-keys), [`UntypedLabel`](../../specification/#untypedlabel-directory-of-different-types), and [`Index`](../../specification/#index-list-with-integer-keys): bundle objects with string-based keys (`Label` and `UntypedLabel`) or simply an ordered array (effectively, integer-based keys) consisting of a single type (`Label` and `Index`) or any types (`UntypedLabel`).
   * [`Branch`](../../specification/#branch-tuple-of-different-types): for the fourth case, an ordered array of any types. A `Branch` is useful as a "cable splitter". For instance, to make a histogram that tracks minimum and maximum value, do this:
 
 ```scala
@@ -651,4 +651,4 @@ List((0.0,16.0), (1.0,12.0), (1.0,11.0), (1.0,12.0), (1.0,12.0), (1.0,13.0), (1.
 
 **Non-aggregation:**
 
-  * [`Bag`](../../specification/#bag-accumulate-values-for-scatter-plots) and [`Sample`](../..//specification/#sample-reservoir-sampling): collect data points, rather than aggregate quantities.
+  * [`Bag`](../../specification/#bag-accumulate-values-for-scatter-plots): collects data points, rather than aggregating a quantity.

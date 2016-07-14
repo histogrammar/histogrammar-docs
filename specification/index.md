@@ -85,7 +85,7 @@ Also, some arguments are represented here as being lists of values. If the langu
 
 Many arguments are declared to be double precision, and that is the standard. In some environments, such as some models of GPUs, double precision is not available, and single-precision arithmetic must be used as a substitute. Even more restricted environments (FPGAs!) are limited to premultiplied integers. Such systems can be expected to yield only approximate results.
 
-All but one of the primitives ([Sample](#sample-reservoir-sampling)) are deterministic. They should always yield the same result on the same data at the level of JSON equality. (JSON equality ignores the order of key-value pairs in maps and may truncate the least significant digits of numbers.) Implementations in different languages should also yield the same results, at the level of JSON equality.
+All of the primitives are deterministic and order-independent. They should always yield the same result on the same data, no matter how the data are partitioned (associativity) or shuffled (commutativity), at the level of JSON equality. (JSON equality ignores the order of key-value pairs in maps and may truncate the least significant digits of numbers.) Implementations in different languages should also yield the same results, at the level of JSON equality.
 
 If this document disagrees with the behavior of a Histogrammar implementation, this document should be taken as normative. Ultimately, disagreements would be decided in favor of the specification. For the time being, however, the specification needs to be debugged just as much as the existing implementations, so corrections on both sides are expected.
 
@@ -368,66 +368,9 @@ JSON object containing
  "data": {"entries": 123.0, "mean": 3.14, "variance": 0.1, "name": "myfunc"}}
 ```
 
-## **AbsoluteErr:** mean-absolute-error
-
-Accumulate the weighted mean absolute error (MAE) of a quantity around zero.
-
-The MAE is sometimes used as a replacement for the standard deviation, associated with medians, rather than means. However, this aggregator makes no attempt to estimate a median. If used as an "error," it should be used on a quantity whose nominal value is zero, such as a residual.
-
-### AbsoluteErring constructor and required members
-
-```python
-AbsoluteErr.ing(quantity)
-```
-
-  * `quantity` (function returning double) computes the quantity of interest from the data.
-  * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `mae` (mutable double) is the mean absolute error.
-
-### AbsoluteErred constructor and required members
-
-```python
-AbsoluteErr.ed(entries, mae)
-```
-
-  * `entries` (double) is the number of entries.
-  * `mae` (double) is the mean absolute error.
-
-### Fill and combine algorithms
-
-```python
-def fill(absoluteerring, datum, weight):
-    if weight > 0.0:
-        q = absoluteerring.quantity(datum)
-        absoluteerring.entries += weight
-        absoluteerring.absoluteSum += weight * abs(q)
-
-def combine(one, two):
-    entries = one.entries + two.entries
-    mae = one.entries*one.mae + two.entries*two.mae
-    return AbsoluteErr.ed(entries, mae)
-```
-
-**FIXME:** I have no theoretical reason to believe that a weighted mean is the right way to combine mean absolute errors.
-
-### JSON format
-
-  * `entries` (JSON number, "nan", "inf", or "-inf")
-  * `mae` (JSON number, "nan", "inf", or "-inf")
-  * optional `name` (JSON string), name of the `quantity` function, if provided.
-
-**Example:**
-
-```json
-{"type": "AbsoluteErr",
- "data": {"entries": 123.0, "mae": 3.14, "name": "myfunc"}}
-```
-
 ## **Minimize:** minimum value
 
 Find the minimum value of a given quantity. If no data are observed, the result is NaN.
-
-Unlike [Quantile](#quantile-such-as-median-quartiles-quintiles-etc) with a target of 0, Minimize is exact.
 
 ### Minimizing constructor and required members
 
@@ -490,8 +433,6 @@ JSON object containing
 
 Find the maximum value of a given quantity. If no data are observed, the result is NaN.
 
-Unlike [Quantile](#quantile-such-as-median-quartiles-quintiles-etc) with a target of 1, Maximize is exact.
-
 ### Maximizing constructor and required members
 
 ```python
@@ -547,90 +488,6 @@ JSON object containing
 ```json
 {"type": "Maximize",
  "data": {"entries": 123.0, "max": 3.14, "name": "myfunc"}}
-```
-
-## **Quantile:** such as median, quartiles, quintiles, etc.
-
-Estimate a quantile, such as 0.5 for median, (0.25, 0.75) for quartiles, or (0.2, 0.4, 0.6, 0.8) for quintiles, etc.
-
-**Note:** this is an inexact heuristic! In general, it is not possible to derive an exact quantile in a single pass over a dataset (without accumulating a large fraction of the dataset in memory). To interpret this statistic, refer to the fill and merge algorithms below.
-
-The quantile aggregator dynamically minimizes the mean absolute error between the current estimate and the target quantile, with a learning rate that depends on the cumulative deviations. The algorithm is deterministic: the same data always yields the same final estimate.
-
-This statistic has the best accuracy for quantiles near the middle of the distribution, such as the median (0.5), and the worst accuracy for quantiles near the edges, such as the first or last percentile (0.01 or 0.99). Use the specialized aggregators for the [Minimize](#minimize-minimum-value) (0.0) or [Maximize](#maximize-maximum-value) (1.0) of a distribution, since those aggregators are exact.
-
-Another alternative is to use [AdaptivelyBin](#adaptivelybin-for-unknown-distributions) to histogram the distribution and then estimate quantiles from the histogram bins. AdaptivelyBin with `tailDetail == 1.0` maximizes detail on the tails of the distribution (Yael Ben-Haim and Elad Tom-Tov's original algorithm), providing the best estimates of extreme quantiles like 0.01 and 0.99.
-
-### Quantiling constructor and required members
-
-```python
-Quantile.ing(target, quantity)
-```
-
-  * `target` (double) is a value between 0.0 and 1.0 (inclusive), indicating the quantile to approximate.
-  * `quantity` (function returning double) computes the quantity of interest from the data.
-  * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `estimate` (mutable double) is the best estimate of where `target` of the distribution is below this value and `1.0 - target` of the distribution is above. Initially, this value is NaN.
-  * `cumulativeDeviation` (mutable double) is the sum of absolute error between observed values and the current `estimate` (which moves). Initially, this value is 0.0.
-
-### Quantiled constructor and required members
-
-```python
-Quantile.ed(entries, target, estimate)
-```
-
-  * `entries` (double) is the number of entries.
-  * `target` (double) is the value between 0.0 and 1.0 (inclusive), indicating the quantile approximated.
-  * `estimate` (double) is the best estimate of where `target` of the distribution is below this value and `1.0 - target` of the distribution is above.
-
-### Fill and combine algorithms
-
-```python
-def fill(quantiling, datum, weight):
-    if weight > 0.0:
-        q = quantiling.quantity(datum)
-        quantiling.entries += weight
-        if math.isnan(quantiling.estimate):
-            quantiling.estimate = q
-        else:
-            quantiling.cumulativeDeviation += abs(q - quantiling.estimate)
-            learningRate = 1.5*quantiling.cumulativeDeviation/quantiling.entries**2
-            quantiling.estimate = weight * learningRate * \
-                (cmp(q, quantiling.estimate) + 2.0*quantiling.target - 1.0)
-
-def combine(one, two):
-    if one.target != two.target:
-        raise Exception
-    entries = one.entries + two.entries
-    if math.isnan(one.estimate) and math.isnan(two.estimate):
-        estimate = float("nan")
-    elif math.isnan(one.estimate):
-        estimate = two.estimate
-    elif math.isnan(two.estimate):
-        estimate = one.estimate
-    elif entries == 0.0:
-        estimate = (one.estimate + two.estimate) / 2.0
-    else:
-        estimate = (one.entries*one.estimate + two.entries*two.estimate) / entries
-    return Quantile.ed(entries, one.target, estimate)
-```
-
-**FIXME:** I have no theoretical reason to believe that a weighted mean is the right way to combine these estimates.
-
-### JSON format
-
-JSON object containing
-
-  * `entries` (JSON number, "nan", "inf", or "-inf")
-  * `target` (JSON number)
-  * `estimate` (JSON number, "nan", "inf", or "-inf")
-  * optional `name` (JSON string), name of the `quantity` function, if provided.
-
-**Example:**
-
-```json
-{"type": "Qantile",
- "data": {"entries": 123.0, "target": 0.5, "estimate": 3.14, "name": "myfunc"}}
 ```
 
 # Second kind: group data by a quantity and pass to sub-aggregators
@@ -896,7 +753,7 @@ JSON object containing
    "name": "myfunc"}}
 ```
 
-## **CentrallyBin:** irregular but fully partitioning
+## **CentrallyBin:** fully partitioning with centers
 
 Split a quantity into bins defined by irregularly spaced bin centers, with exactly one sub-aggregator filled per datum (the closest one).
 
@@ -1038,185 +895,106 @@ Note that the bins type does not apply to `min` and `max` because they quantify 
    "bins:name": "myfunc2"}}
 ```
 
-## **AdaptivelyBin:** for unknown distributions
+## **IrregularlyBin:** fully partitioning with edges
 
-Adaptively partition a domain into bins and fill them at the same time using a clustering algorithm. Each input datum contributes to exactly one final bin.
+Accumulate a suite of aggregators, each between two thresholds, filling exactly one per datum.
 
-The algorithm is based on ["A streaming parallel decision tree algorithm," Yael Ben-Haim and Elad Tom-Tov, _J. Machine Learning Research 11,_ 2010.](http://www.jmlr.org/papers/volume11/ben-haim10a/ben-haim10a.pdf) with a small modification for display histograms.
+This is a variation on [Stack](#stack-cumulative-filling), which fills `N + 1` aggregators with `N` successively tighter cut thresholds. IrregularlyBin fills `N + 1` aggregators in the non-overlapping intervals between `N` thresholds.
 
-Yael Ben-Haim and Elad Tom-Tov's algorithm adds each new data point as a new bin containing a single value, then merges the closest bins if the total number of bins exceeds a maximum (like hierarchical clustering in one dimension).
+IrregularlyBin is also similar to [CentrallyBin](#centrallybin-fully-partitioning-with-centers), in that they both partition a space into irregular subdomains with no gaps and no overlaps. However, CentrallyBin is defined by bin centers and IrregularlyBin is defined by bin edges, the first and last of which are at negative and positive infinity.
 
-This tends to provide the most detail on the tails of a distribution (which have the most widely spaced bins), and is therefore a good alternative to [Quantile](#quantile-such-as-median-quartiles-quintiles-etc) for estimating extreme quantiles like 0.01 and 0.99.
-
-However, a histogram binned this way is less interesting for visualizing a distribution. Usually, the least interesting bins are the ones with the fewest entries, so one can consider merging the bins with the fewest entries, giving no detail on the tails.
-
-As a compromise, we introduce a "tail detail" hyperparameter that strikes a balance between the two extremes: the bins that are merged minimize
-
-```
-tailDetail*(pos2 - pos1)/(max - min) + (1.0 - tailDetail)*(entries1 + entries2)/entries
-```
-
-where `pos1` and `pos2` are the (ordered) positions of the two bins, `min` and `max` are the minimum and maximum positions of all entries, `entries1` and `entries2` are the number of entries in the two bins, and `entries` is the total number of entries in all bins. The denominators normalize the scales of domain position and number of entries so that `tailDetail` may be unitless and between 0.0 and 1.0 (inclusive).
-
-A value of `tailDetail = 0.2` is a good default.
-
-This algorithm is deterministic; the same input data yield the same histogram.
-
-### AdaptivelyBinning constructor and required members
+### IrregularlyBinning constructor and required members
 
 ```python
-AdaptivelyBin.ing(quantity, num=100, tailDetail=0.2, value=Count.ing(), nanflow=Count.ing())
+IrregularlyBin.ing(thresholds, quantity, value, nanflow)
 ```
 
+  * `thresholds` (list of doubles) specifies `N` lower cut thresholds, so the IrregularlyBin will fill `N + 1` aggregators in distinct intervals.
   * `quantity` (function returning double) computes the quantity of interest from the data.
-  * `num` (32-bit integer) specifies the maximum number of bins before merging.
-  * `tailDetail` (double) is a value between 0.0 and 1.0 (inclusive) for choosing the pair of bins to merge (see above).
-  * `value` (present-tense aggregator) generates sub-aggregators to put in each bin.
+  * `value` (present-tense aggregator) generates sub-aggregators for each bin.
   * `nanflow` (present-tense aggregator) is a sub-aggregator to use for data whose quantity is NaN.
   * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `bins` (mutable list of double, present-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](#centrallybin-irregular-but-fully-partitioning).
-  * `min` (mutable double) is the lowest value of the quantity observed, initially NaN.
-  * `max` (mutable double) is the highest value of the quantity observed, initially NaN.
+  * `bins` (list of double, present-tense aggregator pairs) are the `N + 1` lower thresholds and sub-aggregators. The first threshold is minus infinity; the rest are the ones specified by `thresholds`.
 
-### AdaptivelyBinned constructor and required members
+### IrregularlyBinned constructor and required members
 
 ```python
-AdaptivelyBin.ed(entries, num, tailDetail, contentType, bins, min, max, nanflow)
+IrregularlyBin.ed(entries, bins, nanflow)
 ```
 
   * `entries` (double) is the number of entries.
-  * `num` (32-bit integer) specifies the maximum number of bins before merging.
-  * `tailDetail` (double) is a value between 0.0 and 1.0 (inclusive) for choosing the pair of bins to merge (see above).
-  * `contentType` (string) is the value's sub-aggregator type (must be provided to determine type for the case when `bins` is empty).
-  * `bins` (list of double, past-tense aggregator pairs) is the list of bin centers and bin contents. The domain of each bin is determined as in [CentrallyBin](#centrallybin-irregular-but-fully-partitioning).
-  * `min` (double) is the lowest value of the quantity observed or NaN if no data were observed.
-  * `max` (double) is the highest value of the quantity observed or NaN if no data were observed.
+  * `bins` (list of double, past-tense aggregator pairs) are the `N + 1` thresholds and sub-aggregator pairs.
   * `nanflow` (past-tense aggregator) is the filled nanflow bin.
 
 ### Fill and combine algorithms
 
 ```python
-def mergeMetric(pos1, pos2, min, max, entries1, entries2, entries, tailDetail):
-    return tailDetail*(pos2 - pos1)/(max - min) + (1.0 - tailDetail)*(entries1 + entries2)/entries
-
-def merge(hist):
-    bestMetric = None
-    hist.bins.sort()
-    for i in range(0, len(hist.bins) - 1):
-        c1, v1 = hist.bins[i]
-        c2, v2 = hist.bins[i + 1]
-        q = mergeMetric(c1, c2, hist.min, hist.max, v1.entries, v2.entries, hist.entries, hist.tailDetail)
-        if bestMetric is None or q < bestMetric:
-            bestMetric = q
-            leftToCombine = i
-            rightToCombine = i + 1
-    c1, v1 = hist.bins[leftToCombine]
-    c2, v2 = hist.bins[rightToCombine]
-    newc = (c1 * v1.entries + c2 * v2.entries) / (v1.entries + v2.entries)
-    newv = combine(v1, v2)
-    hist.bins[leftToCombine] = newv
-    del hist.bins[rightToCombine]
-
-def fill(adaptivelybinning, datum, weight):
+def fill(irregularlybinning, datum, weight):
     if weight > 0.0:
-        q = adaptivelybinning.quantity(datum)
-        adaptivelybinning.bins.append((q, weight))
-        while len(adaptivelybinning.bins) > adaptivelybinning.num:
-            merge(adaptivelybinning)
-
-        adaptivelybinning.entries += weight
-
-        if math.isnan(adaptivelybinning.min) or q < adaptivelybinning.min:
-            adaptivelybinning.min = q
-        if math.isnan(adaptivelybinning.max) or q > adaptivelybinning.max:
-            adaptivelybinning.max = q
+        q = irregularlybinning.quantity(datum)
+        if math.isnan(q):
+            fill(irregularlybinning.nanflow, datum, weight)
+        else:
+            lowEdges = irregularlybinning.bins
+            highEdges = irregularlybinning.bins[1:] + [(float("nan"), None)]
+            for (low, sub), (high, _) in zip(lowEdges, highEdges):
+                if low <= q < high:
+                    fill(sub, datum, weight)
+                    break
+            irregularlybinning.entries += weight
 
 def combine(one, two):
-    if one.num != two.num or one.tailDetail != two.tailDetail:
+    if one.thresholds != two.thresholds:
         raise Exception
     entries = one.entries + two.entries
-
-    bins1 = dict(one.bins)
-    bins2 = dict(two.bins)
-    bins = []
-    for c in set(bins1.keys()).union(set(bins2.keys())):
-        if c in bins1 and c in bins2:
-            bins.append((c, combine(bins1[c], bins2[c])))
-        elif c in bins1:
-            bins.append((c, bins1[c].copy()))
-        elif c in bins2:
-            bins.append((c, bins2[c].copy()))
-
-    if math.isnan(one.min):
-        min = two.min
-    elif math.isnan(two.min):
-        min = one.min
-    elif one.min < two.min:
-        min = one.min
-    else:
-        min = two.min
-
-    if math.isnan(one.max):
-        max = two.max
-    elif math.isnan(two.max):
-        max = one.max
-    elif one.max > two.max:
-        max = one.max
-    else:
-        max = two.max
-
+    bins = [(c, combine(v1, v2)) for (c, v1), (_, v2) in zip(one.bins, two.bins)]
     nanflow = combine(one.nanflow, two.nanflow)
-    out = AdaptivelyBin.ed(entries, num, tailDetail, contentType, bins, min, max, nanflow)
-    while len(out.bins) > out.num:
-        merge(out)
-    return out
+    return IrregularlyBin.ed(entries, bins, nanflow)
 ```
-
-The only difference between this and Yael Ben-Haim and Elad Tom-Tov's algorithm is `mergeMetric`, which is
-
-```python
-def mergeMetric(pos1, pos2, min, max, entries1, entries2, entries, tailDetail):
-    return pos2 - pos1
-```
-
-in the original algorithm.
 
 ### JSON format
 
 JSON object containing
 
   * `entries` (JSON number, "nan", "inf", or "-inf")
-  * `num` (JSON number, must be an integer)
-  * `bins:type` (JSON string), name of the bins sub-aggregator type
-  * `bins` (JSON array of JSON objects containing `center` (JSON number) and `value` (sub-aggregator)), collection of bin centers and their associated data
-  * `min` (JSON number, "nan", "inf", or "-inf")
-  * `max` (JSON number, "nan", "inf", or "-inf")
+  * `type` (JSON string), name of the sub-aggregator type
+  * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
-  * `tailDetail` (JSON number)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
-  * optional `bins:name` (JSON string), name of the `quantity` function used by each bin value. If specified here, it is _not_ specified in all the values, thereby streamlining the JSON.
+  * optional `data:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
 
 **Examples:**
 
 ```json
-{"type": "AdaptivelyBin",
+{"type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
-   "num": 5,
-   "bins:type": "Count",
-   "bins": [
-     {"center": -335.67, "value": 15.0},
-     {"center": -2.0, "value": 20.0},
-     {"center": 0.0, "value": 20.0},
-     {"center": 2.0, "value": 30.0},
-     {"center": 2602.11, "value": 38.0}],
-   "min": -999.0,
-   "max": 12345.0,
+   "type": "Count",
+   "data": [
+     {"atleast": "-inf", "data": 23.0},
+     {"atleast": 1.0, "data": 20.0},
+     {"atleast": 2.0, "data": 20.0},
+     {"atleast": 3.0, "data": 30.0},
+     {"atleast": 4.0, "data": 30.0}],
    "nanflow:type": "Count",
    "nanflow": 0.0,
-   "tailDetail": 0.2,
    "name": "myfunc"}}
+```
+
+```json
+{"type": "IrregularlyBin",
+ "data": {
+   "entries": 123.0,
+   "type": "Average",
+   "data": [
+     {"atleast": "-inf", "data": {"entries": 23.0, "mean": 3.14}},
+     {"atleast": 1.0, "data": {"entries": 20.0, "mean": 2.28}},
+     {"atleast": 2.0, "data": {"entries": 20.0, "mean": 1.16}},
+     {"atleast": 3.0, "data": {"entries": 30.0, "mean": 8.9}},
+     {"atleast": 4.0, "data": {"entries": 30.0, "mean": 22.7}}],
+   "nanflow:type": "Count",
+   "nanflow": 0.0}}
 ```
 
 ## **Categorize:** string-valued bins, bar charts
@@ -1425,21 +1203,21 @@ To make plots from different sources in Histogrammar, one must perform separate 
 Stack.ing(thresholds, quantity, value, nanflow)
 ```
 
-  * `thresholds` (list of doubles) specifies `N` cut thresholds, so the Stack will fill `N + 1` aggregators, each overlapping the last.
+  * `thresholds` (list of doubles) specifies `N` lower cut thresholds, so the Stack will fill `N + 1` aggregators, each overlapping the last.
   * `quantity` (function returning double) computes the quantity of interest from the data.
   * `value` (present-tense aggregator) generates sub-aggregators for each bin.
   * `nanflow` (present-tense aggregator) is a sub-aggregator to use for data whose quantity is NaN.
   * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `cuts` (list of double, present-tense aggregator pairs) are the `N + 1` thresholds and sub-aggregators. (The first threshold is minus infinity; the rest are the ones specified by `thresholds`).
+  * `bins` (list of double, present-tense aggregator pairs) are the `N + 1` lower thresholds and sub-aggregators. The first is minus infinity; the rest are the ones specified by `thresholds`.
 
 ### Stacked constructor and required members
 
 ```python
-Stack.ed(entries, cuts, nanflow)
+Stack.ed(entries, bins, nanflow)
 ```
 
   * `entries` (double) is the number of entries.
-  * `cuts` (list of double, past-tense aggregator pairs) are the `N + 1` thresholds and sub-aggregator pairs.
+  * `bins` (list of double, past-tense aggregator pairs) are the `N + 1` thresholds and sub-aggregator pairs.
   * `nanflow` (past-tense aggregator) is the filled nanflow bin.
 
 ### Stacked alternate constructor
@@ -1461,28 +1239,28 @@ def fill(stacking, datum, weight):
         if math.isnan(q):
             fill(stacking.nanflow, datum, weight)
         else:
-            for threshold, sub in stacking.cuts:
+            for threshold, sub in stacking.bins:
                 if q >= threshold:
                     fill(sub, datum, weight)
         stacking.entries += weight
 
 def combine(one, two):
-    if [c for c, v in one.cuts] != [c for c, v in two.cuts]:
+    if [c for c, v in one.bins] != [c for c, v in two.bins]:
         raise Exception
     entries = one.entries + two.entries
-    cuts = []
-    for (c, v1), (_, v2) in zip(one.cuts, two.cuts):
-        cuts.append((c, combine(v1, v2)))
+    bins = []
+    for (c, v1), (_, v2) in zip(one.bins, two.bins):
+        bins.append((c, combine(v1, v2)))
     nanflow = combine(one.nanflow, two.nanflow)
-    return Stack.ed(entries, cuts, nanflow)
+    return Stack.ed(entries, bins, nanflow)
 
 def build(aggregators):
     entries = sum(x.entries for x in aggregators)
-    cuts = []
+    bins = []
     for i in range(len(aggregators)):
         stackedAggregators = reduce(lambda a, b: combine(a, b), aggregators[i:])
-        cuts.append((float("nan"), stackedAggregators))
-    return Stack.ed(entries, cuts, Count.ed(0.0))
+        bins.append((float("nan"), stackedAggregators))
+    return Stack.ed(entries, bins, Count.ed(0.0))
 ```
 
 ### JSON format
@@ -1491,7 +1269,7 @@ JSON object containing
 
   * `entries` (JSON number, "nan", "inf", or "-inf")
   * `type` (JSON string), name of the sub-aggregator type
-  * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of cut thresholds and their associated data
+  * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -1526,108 +1304,6 @@ JSON object containing
      {"atleast": 2.0, "data": {"entries": 82.0, "mean": 1.16}},
      {"atleast": 3.0, "data": {"entries": 37.0, "mean": 8.9}},
      {"atleast": 4.0, "data": {"entries": 4.0, "mean": 22.7}}],
-   "nanflow:type": "Count",
-   "nanflow": 0.0}}
-```
-
-## **Partition:** exclusive filling
-
-Accumulate a suite of aggregators, each between two thresholds, filling exactly one per datum.
-
-This is a variation on [Stack](#stack-cumulative-filling), which fills `N + 1` aggregators with `N` successively tighter cut thresholds. Partition fills `N + 1` aggregators in the non-overlapping intervals between `N` thresholds.
-
-Partition is also similar to [CentrallyBin](#centrallybin-irregular-but-fully-partitioning), in that they both partition a space into irregular subdomains with no gaps and no overlaps. However, CentrallyBin is defined by bin centers and Partition is defined by bin edges, the first and last of which are at negative and positive infinity.
-
-### Partitioning constructor and required members
-
-```python
-Partition.ing(thresholds, quantity, value, nanflow)
-```
-
-  * `thresholds` (list of doubles) specifies `N` cut thresholds, so the Partition will fill `N + 1` aggregators in distinct intervals.
-  * `quantity` (function returning double) computes the quantity of interest from the data.
-  * `value` (present-tense aggregator) generates sub-aggregators for each bin.
-  * `nanflow` (present-tense aggregator) is a sub-aggregator to use for data whose quantity is NaN.
-  * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `cuts` (list of double, present-tense aggregator pairs) are the `N + 1` thresholds and sub-aggregators. (The first threshold is minus infinity; the rest are the ones specified by `thresholds`).
-
-### Partitioned constructor and required members
-
-```python
-Partition.ed(entries, cuts, nanflow)
-```
-
-  * `entries` (double) is the number of entries.
-  * `cuts` (list of double, past-tense aggregator pairs) are the `N + 1` thresholds and sub-aggregator pairs.
-  * `nanflow` (past-tense aggregator) is the filled nanflow bin.
-
-### Fill and combine algorithms
-
-```python
-def fill(partitioning, datum, weight):
-    if weight > 0.0:
-        q = partitioning.quantity(datum)
-        if math.isnan(q):
-            fill(partitioning.nanflow, datum, weight)
-        else:
-            lowEdges = partitioning.cuts
-            highEdges = partitioning.cuts[1:] + [(float("nan"), None)]
-            for (low, sub), (high, _) in zip(lowEdges, highEdges):
-                if low <= q < high:
-                    fill(sub, datum, weight)
-                    break
-            partitioning.entries += weight
-
-def combine(one, two):
-    if one.thresholds != two.thresholds:
-        raise Exception
-    entries = one.entries + two.entries
-    cuts = [(c, combine(v1, v2)) for (c, v1), (_, v2) in zip(one.cuts, two.cuts)]
-    nanflow = combine(one.nanflow, two.nanflow)
-    return Partition.ed(entries, cuts, nanflow)
-```
-
-### JSON format
-
-JSON object containing
-
-  * `entries` (JSON number, "nan", "inf", or "-inf")
-  * `type` (JSON string), name of the sub-aggregator type
-  * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of cut thresholds and their associated data
-  * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
-  * `nanflow` (sub-aggregator)
-  * optional `name` (JSON string), name of the `quantity` function, if provided.
-  * optional `data:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
-
-**Examples:**
-
-```json
-{"type": "Partition",
- "data": {
-   "entries": 123.0,
-   "type": "Count",
-   "data": [
-     {"atleast": "-inf", "data": 23.0},
-     {"atleast": 1.0, "data": 20.0},
-     {"atleast": 2.0, "data": 20.0},
-     {"atleast": 3.0, "data": 30.0},
-     {"atleast": 4.0, "data": 30.0}],
-   "nanflow:type": "Count",
-   "nanflow": 0.0,
-   "name": "myfunc"}}
-```
-
-```json
-{"type": "Partition",
- "data": {
-   "entries": 123.0,
-   "type": "Average",
-   "data": [
-     {"atleast": "-inf", "data": {"entries": 23.0, "mean": 3.14}},
-     {"atleast": 1.0, "data": {"entries": 20.0, "mean": 2.28}},
-     {"atleast": 2.0, "data": {"entries": 20.0, "mean": 1.16}},
-     {"atleast": 3.0, "data": {"entries": 30.0, "mean": 8.9}},
-     {"atleast": 4.0, "data": {"entries": 30.0, "mean": 22.7}}],
    "nanflow:type": "Count",
    "nanflow": 0.0}}
 ```
@@ -1734,7 +1410,7 @@ fills a scatter plot in all x-y bins that have fewer than 10 entries and only a 
 
 Limit can effectively swap between two descriptions if it is embedded in a collection, such as [Branch](#branch-tuple-of-different-types). All elements of the collection would be filled until the Limit saturates, leaving only the low-detail one. For instance, one could aggregate several [SparselyBin](#sparselybin-ignore-zeros) histograms, each with a different `binWidth`, and progressively eliminate them in order of increasing `binWidth`.
 
-Note that Limit saturates when it reaches a specified _total weight,_ not the number of data points in a [Bag](#bag-accumulate-values-for-scatter-plots), so it is not certain to control memory use. However, the total weight is of more use to data analysis. ([Sample](#sample-reservoir-sampling) puts a strict limit on memory use.)
+Note that Limit saturates when it reaches a specified _total weight,_ not the number of data points in a [Bag](#bag-accumulate-values-for-scatter-plots), so it is not certain to control memory use. However, the total weight is of more use to data analysis.
 
 ### Limiting constructor and required members
 
@@ -2155,7 +1831,7 @@ A bag is the appropriate data type for scatter plots: a container that collects 
 
 Although the user-defined function may return scalar numbers, fixed-dimension vectors of numbers, or categorical strings, it may not mix types. Different Bag primitives in an analysis tree may collect different types.
 
-Consider using Bag with [Limit](#limit-keep-detail-until-entries-is-large) for collections that roll over to a mere count when they exceed a limit, or [Sample](#sample-reservoir-sampling) for reservoir sampling.
+Consider using Bag with [Limit](#limit-keep-detail-until-entries-is-large) for collections that roll over to a mere count when they exceed a limit.
 
 ### Bagging constructor and required members
 
@@ -2238,152 +1914,6 @@ JSON object containing
 {"type": "Bag",
  "data": {
    "entries": 123.0,
-   "values": [
-     {"w": 23.0, "v": "five"},
-     {"w": 20.0, "v": "four"},
-     {"w": 20.0, "v": "one"},
-     {"w": 30.0, "v": "three"},
-     {"w": 30.0, "v": "two"}]}}
-```
-
-## **Sample:** reservoir sampling
-
-Accumulate raw numbers, vectors of numbers, or strings, randomly replacing them with Reservoir Sampling when the number of values exceeds a limit.
-
-Sample collects raw values without attempting to group them by distinct value (as [Bag](#bag-accumulate-values-for-scatter-plots) does), up to a given maximum _number_ of entries (unlike [Limit](#limit-keep-detail-until-entries-is-large), which rolls over at a given total weight). The reason for the limit on Sample is purely to conserve memory.
-
-The maximum number of entries and the data type together determine the size of the working set. If new values are added after this set is full, individual values will be randomly chosen for replacement. The probability of replacement is proportional to an entry's weight and it decreases with time, such that the final sample is a representative subset of all observed values, without preference for early values or late values.
-
-This algorithm is known as weighted Reservoir Sampling, and it is non-deterministic. Each evaluation will likely result in a different final set.
-
-Specifically, the algorithm implemented here was described in ["Weighted random sampling with a reservoir," Pavlos S. Efraimidis and Paul G. Spirakis, _Information Processing Letters 97 (5): 181–185,_ 2005 (doi:10.1016/j.ipl.2005.11.003)](http://www.sciencedirect.com/science/article/pii/S002001900500298X).
-
-Although the user-defined function may return scalar numbers, fixed-dimension vectors of numbers, or categorical strings, it may not mix types. Different Sample primitives in an analysis tree may collect different types.
-
-### Sampling constructor and required members
-
-```python
-Sample.ing(limit, quantity, randomSeed=None)
-```
-
-  * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
-  * `quantity` (function returning a double, a vector of doubles, or a string) computes the quantity of interest from the data.
-  * `randomSeed` (long integer or `None`) an optional random seed to make the sampling deterministic.
-  * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `values` (mutable, list of quantity return type, double, double triplets) is the set of collected values with their weights and a random number (see algorithm below), sorted by the random number. Its size is at most `limit` and it may contain duplicates.
-  * `randomGenerator` (random generator state or `None`) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampling instances.
-
-### Sampled constructor and required members
-
-```python
-Sample.ed(entries, limit, values, randomSeed=None)
-```
-
-  * `entries` (double) is the number of entries.
-  * `limit` (32-bit integer) is the maximum number of entries to store before replacement. This is a strict _number_ of entries, unaffected by weights.
-  * `values` (list of quantity return type, double, double triples) is the set of collected values with their weights. Its size is at most `limit` and it may contain duplicates.
-  * `randomSeed` (long integer or `None`) an optional random seed to make the sampling deterministic.
-  * `randomGenerator` (random generator state or `None`) platform-dependent representation of the random generator's state if a `randomSeed` was provided. The random generator's sequence of values must be unaffected by any other random sampling elsewhere in the environment, including other Sampled instances.
-
-### Fill and combine algorithms
-
-```python
-import random
-MIN_LONG = -2**63
-MAX_LONG = 2**63 - 1
-
-def merge(values, datum, weight, limit, randomGenerator):
-    if randomGenerator is None:
-        r = random.uniform(0.0, 1.0)**(1.0/weight)
-    else:
-        r = randomGenerator.uniform(0.0, 1.0)**(1.0/weight)
-    if len(values) < limit:
-        values.append((r, datum, weight))
-        values.sort()
-    elif values[0][0] < r:
-        values.append((r, datum, weight))
-        values.sort()
-        del values[0]
-
-def fill(sampling, datum, weight):
-    if weight > 0.0:
-        merge(sampling.values, datum, weight, sampling.limit, sampling.randomGenerator)
-        sampling.entries += weight
-
-def combine(one, two):
-    if one.limit != two.limit:
-        raise Exception
-    entries = one.entries + two.entries
-
-    # make an independent random generator state for the new Sampled instance
-    if one.randomGenerator is not None and two.randomGenerator is not None:
-        # mix the two generator states (not uniformly distributed)
-        newSeed = one.randomGenerator.randint(MIN_LONG, MAX_LONG) + \
-                  two.randomGenerator.randint(MIN_LONG, MAX_LONG)
-        # simulate 64-bit wrap-around arithmetic
-        if newSeed > MAX_LONG:
-            newSeed -= MAX_LONG - MIN_LONG
-        if newSeed < MIN_LONG:
-            newSeed += MAX_LONG - MIN_LONG
-        newGenerator = random.Random(newSeed)
-    elif one.randomGenerator is not None:
-        newGenerator = random.Random(one.randomGenerator.randint(MIN_LONG, MAX_LONG))
-    elif two.randomGenerator is not None:
-        newGenerator = random.Random(two.randomGenerator.randint(MIN_LONG, MAX_LONG))
-    else:
-        newGenerator = None
-
-    values = []
-    for r, datum, weight in one.values:
-        merge(values, datum, weight, one.limit, newGenerator)
-    for r, datum, weight in two.values:
-        merge(values, datum, weight, one.limit, newGenerator)
-    return Sample.ed(entries, one.limit, [(d, w) for r, d, w in values], newGenerator)
-```
-
-### JSON format
-
-JSON object containing
-
-  * `entries` (JSON number, "nan", "inf", or "-inf")
-  * `limit` (JSON number, must be an integer)
-  * `values` (JSON array of JSON objects containing `w` (JSON number), the weight of a value and `v` (JSON number, array of numbers, or string), the value), which should be sorted by `v` (lexicographically)
-  * optional `name` (JSON string), name of the `quantity` function, if provided.
-  * optional `seed` (JSON number, must be a 64-bit integer), random number seed derived from the `randomGenerator`, if present. (This is not the `randomSeed` of the Sampling/Sampled instance constructor, but a new one deterministically derived from it.)
-
-**Examples:**
-
-```json
-{"type": "Sample",
- "data": {
-   "entries": 123.0,
-   "limit": 5,
-   "values": [
-     {"w": 23.0, "v": -999.0},
-     {"w": 20.0, "v": -4.0},
-     {"w": 20.0, "v": -2.0},
-     {"w": 30.0, "v": 0.0},
-     {"w": 30.0, "v": 2.0}]}}
-```
-
-```json
-{"type": "Sample",
- "data": {
-   "entries": 123.0,
-   "limit": 5,
-   "values": [
-     {"w": 23.0, "v": [1.0, 2.0, 3.0]},
-     {"w": 20.0, "v": [3.14, 3.14, 3.14]},
-     {"w": 20.0, "v": [99.0, 50.0, 1.0]},
-     {"w": 30.0, "v": [7.0, 2.2, 9.8]},
-     {"w": 30.0, "v": [33.3, 66.6, 99.9]}]}}
-```
-
-```json
-{"type": "Sample",
- "data": {
-   "entries": 123.0,
-   "limit": 5,
    "values": [
      {"w": 23.0, "v": "five"},
      {"w": 20.0, "v": "four"},
