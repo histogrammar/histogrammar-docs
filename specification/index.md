@@ -53,6 +53,8 @@ The major and minor version numbers of implementations must match the major and 
 
 For example, Histogrammar-Python 0.8.5 should be adhere to version 0.8 of the specification and therefore be interoperable with Histogrammar-Scala 0.8.3. Always use the latest bugfix version, but pick a _major.minor_ version for compatibility.
 
+Starting in version 1.0, all versions of the specification with the same major number are backward compatible. That is, code using Histogrammar 1.5 interfaces will still work in Histogrammars 1.6, 1.7, and 1.8, but maybe not 2.0 and maybe not 1.4.
+
 ## Data model
 
 The input data for all aggregators is taken to be a stream, possibly an infinite stream, of _entries._ User-defined functions map an entry to something an aggregator can use, such as a boolean for filtering, a floating point number for computing a mean or selecting a bin, or a string for categorical data.
