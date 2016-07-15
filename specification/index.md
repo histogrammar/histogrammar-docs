@@ -1583,8 +1583,7 @@ In strongly typed languages, the restriction to a single type allows nested obje
 Label.ing(pairs)
 ```
 
-  * `pairs` (list of string, present-tense aggregator pairs) is the collection of aggregators to fill.
-  * `pairsMap` (map of the above, probably a hashmap) is intended for fast look-ups.
+  * `pairs` (map of string, present-tense aggregator pairs) is the collection of aggregators to fill.
   * `entries` (mutable double) is the number of entries, initially 0.0.
 
 ### Labeled constructor and required members
@@ -1594,26 +1593,25 @@ Label.ed(entries, pairs)
 ```
 
   * `entries` (double) is the number of entries.
-  * `pairs` (list of string, past-tense aggregator pairs) is the collection of filled aggregators.
-  * `pairsMap` (map of the above, probably a hashmap) is intended for fast look-ups.
+  * `pairs` (map of string, past-tense aggregator pairs) is the collection of filled aggregators.
 
 ### Fill and combine algorithms
 
 ```python
 def fill(labeling, datum, weight):
     if weight > 0.0:
-        for _, v in labeling.pairs:
+        for _, v in labeling.pairs.items():
             fill(v, datum, weight)
         labeling.entries += weight
 
 def combine(one, two):
-    if set(one.pairsMap.keys()) != set(two.pairsMap.keys()):
+    if set(one.pairs.keys()) != set(two.pairs.keys()):
         raise Exception
     entries = one.entries + two.entries
-    pairs = []
-    for l, v1 in one.pairs:
-        v2 = two.pairsMap[l]
-        pairs.append((l, combine(v1, v2)))
+    pairs = {}
+    for l, v1 in one.pairs.items():
+        v2 = two.pairs[l]
+        pairs[l] = combine(v1, v2)
     return Label.ed(entries, pairs)
 ```
 
@@ -1656,8 +1654,7 @@ To collect aggregators of the _same type_ without naming them, use [Index](#inde
 UntypedLabel.ing(pairs)
 ```
 
-  * `pairs` (list of string, present-tense aggregator pairs) is the collection of aggregators to fill.
-  * `pairsMap` (map of the above, probably a hashmap) is intended for fast look-ups.
+  * `pairs` (map of string, present-tense aggregator pairs) is the collection of aggregators to fill.
   * `entries` (mutable double) is the number of entries, initially 0.0.
 
 ### UntypedLabeled constructor and required members
@@ -1667,26 +1664,25 @@ UntypedLabel.ed(entries, pairs)
 ```
 
   * `entries` (double) is the number of entries.
-  * `pairs` (list of string, past-tense aggregator pairs) is the collection of filled aggregators.
-  * `pairsMap` (map of the above, probably a hashmap) is intended for fast look-ups.
+  * `pairs` (map of string, past-tense aggregator pairs) is the collection of filled aggregators.
 
 ### Fill and combine algorithms
 
 ```python
 def fill(untypedlabeling, datum, weight):
     if weight > 0.0:
-        for _, v in untypedlabeling.pairs:
+        for _, v in untypedlabeling.pairs.items():
             fill(v, datum, weight)
         untypedlabeling.entries += weight
 
 def combine(one, two):
-    if set(one.pairsMap.keys()) != set(two.pairsMap.keys()):
+    if set(one.pairs.keys()) != set(two.pairs.keys()):
         raise Exception
     entries = one.entries + two.entries
-    pairs = []
-    for l, v1 in one.pairs:
-        v2 = two.pairsMap[l]
-        pairs.append((l, combine(v1, v2)))
+    pairs = {}
+    for l, v1 in one.pairs.items():
+        v2 = two.pairs[l]
+        pairs[l] = combine(v1, v2)
     return UntypedLabel.ed(entries, pairs)
 ```
 
