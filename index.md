@@ -39,7 +39,7 @@ custom_css: mainpage
 
 </div>
 
-# Reporting bugs
+## Reporting bugs
 
 Report implementation errors on the GitHub Issues tab of the corresponding language version:
 
@@ -51,3 +51,9 @@ Report implementation errors on the GitHub Issues tab of the corresponding langu
 Report general problems, such as inconsistencies in the specification or cross-language feature requests, on [histogrammar-multilang/issues](https://github.com/histogrammar/histogrammar-multilang/issues).
 
 Report errors in this documentation to [histogrammar-docs/issues](https://github.com/histogrammar/histogrammar-docs/issues).
+
+## For developers
+
+   * [GitHub wiki](http://github.com/histogrammar/histogrammar-multilang/wiki) for status, roadmap, and proposals.
+   * [Slack project](http://histogrammar.slack.com/) for communication among developers and with users (request invitation from [pivarski@fnal.gov](pivarski@fnal.gov)).
+   * [Travis-CI](http://travis-ci.org/histogrammar) for the current build state of all Histogrammar repositories.

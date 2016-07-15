@@ -52,7 +52,7 @@ $(window).on("resize", setmargins);
 
 			<span class="byline">Making histograms functional</span> </div>
 
-<p>Histogrammar is a suite of data aggregation primitives, for making histograms and much more. A few composable functions can generate many different types of plots, and these functions are reimplemented (exactly!) in multiple languages for cross-platform compatibility.</p>
+<p>Histogrammar is a suite of data aggregation primitives for making histograms and much, much more. A few composable functions can generate many different types of plots, and these functions are reimplemented (exactly!) in multiple languages and serialized to JSON for cross-platform compatibility.</p>
 	</div>
 
 <div class="title"></div>
@@ -64,7 +64,7 @@ $(window).on("resize", setmargins);
 
 <p>Histogrammar allows you to aggregate data using cross-platform, functional primitives. It serves the same need as HBOOK and its descendants&mdash; summarizing a large dataset with discretized distributions&mdash; but it does so using lambda functions and composition rather than a restrictive set of histogram types.</p>
 
-<p>For instance, to book and fill a histogram in <a href="http://root.cern.ch/">ROOT</a>, you would do the following:</p>
+<p>For instance, to book and fill a histogram in <a href="http://root.cern.ch/" target="_blank">ROOT</a>, you would do the following:</p>
 
 <pre><code>histogram = ROOT.TH1F("name", "title", 100, 0, 10)
 for muon in muons:
@@ -120,13 +120,9 @@ for muon in muons:
 
 <p>Histogrammar also has back-end extensions for aggregating data from different frameworks. It can therefore be thought of as a common language for aggregating and then plotting data, so that every plotting library doesn't have to have individual hooks for every kind of aggregation system. As a language, it represents aggregated data in a way that doesn't have to be recomputed for trivial changes in visualization, such as changing the color of axis tickmarks.</p>
 
-<h3>More information</h3>
+<h3>Get started!</h3>
 
-<p>Users should see <a href="docs">histogrammar.org/docs</a> (below) for tutorials, examples, and reference documentation. In particular, this site provides <a href="docs/install">installation instructions</a>.</p>
-
-<p>Developers should see <a href="http://github.com/histogrammar">the GitHub repository</a> and <a href="http://github.com/histogrammar/histogrammar-multilang/wiki">its wiki</a>, which has fine-grained status updates and future goals. <a href="http://travis-ci.org/histogrammar">Travis-CI</a> shows the current state of the build and unit tests.</p>
-
-<p>Developers and users should both report errors in <a href="http://github.com/histogrammar">GitHub</a>.</p>
+<p>See the documentation below for installation instructions, tutorials, full references, and the cross-language specification. See the GitHub site for the code.</p>
 
 		</div>
 	</div>
