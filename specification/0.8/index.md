@@ -1,5 +1,5 @@
 ---
-title: Specification 0.9-prerelease
+title: Specification 0.8
 type: default
 toc: true
 summary: |
@@ -7,7 +7,7 @@ summary: |
     
     <p>This is the normative specification; any implementations that don't adhere to the definitions on this page should be corrected.</p>
 
-    <p>Previous versions: <a href="0.8">0.8</a>, <a href="0.7">0.7</a></p>
+    <p>Previous versions: <a href="0.7">0.7</a></p>
 ---
 
 # General features
