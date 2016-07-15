@@ -38,3 +38,16 @@ custom_css: mainpage
 </div>
 
 </div>
+
+# Reporting bugs
+
+Report implementation errors on the GitHub Issues tab of the corresponding language version:
+
+   * [histogrammar-scala/issues](https://github.com/histogrammar/histogrammar-scala/issues)
+   * [histogrammar-python/issues](https://github.com/histogrammar/histogrammar-python/issues)
+   * [histogrammar-cpp/issues](https://github.com/histogrammar/histogrammar-cpp/issues)
+   * [Histogrammar.jl/issues](https://github.com/histogrammar/Histogrammar.jl/issues)
+
+Report general problems, such as inconsistencies in the specification or cross-language feature requests, on [histogrammar-multilang/issues](https://github.com/histogrammar/histogrammar-multilang/issues).
+
+Report errors in this documentation to [histogrammar-docs/issues](https://github.com/histogrammar/histogrammar-docs/issues).
