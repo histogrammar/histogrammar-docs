@@ -12,23 +12,23 @@ summary: |
 
 # General features
 
-Histogrammar consists of two dozen aggregation primitives, each performing a simple task, that can be composed to solve complex aggregation problems. These primitives share the following properties.
+Histogrammar consists of twenty aggregation primitives, each performing a simple task, that can be composed to solve complex aggregation problems. These primitives share the following properties.
 
 ### Reducers
 
-The aggregators, individually and collectively, are reducers in the map-reduce sense. That is, they reduce a large table of data points to a small data structure that summarizes the whole. For instance, a traditional histogram is an array of counts, produced by incrementing array bins for each data point associated with it, and the resulting data structure approximates the probability density of the original distribution.
+The aggregators, individually and collectively, are reducers in the map-reduce sense. That is, they reduce a large table of data points to a small data structure that summarizes the whole. For instance, a traditional histogram is an array of counts, produced by incrementing array bins for each data point associated with it, and the resulting data structure approximates the probability density of the dataset in a lossy-compressed form.
 
 ### Composable
 
-A primitive that accepts a sub-aggregator as an argument to its constructor may accept _any_ sub-aggregator. The whole suite of primitives are given to the data analyst as building blocks to compute whatever complex statistics are needed.
+A primitive that accepts a sub-aggregator as an argument to its constructor may accept _any_ sub-aggregator. The suite of primitives should be thought of as building blocks to compute whatever complex statistics are needed.
 
 ### Commutative Monoids
 
-Every primitive has a `combine` method, usually presented as the `+` operator, that allows sub-tallies to be combined into a grand total. This operation is associative and commutative, and has an identity: the aggregator's initial state. (Mathematically, this kind of algebra is known as a _commutative monoid_). Aggregation jobs can easily be distributed: sub-tallies are accumulated in parallel and, being much smaller than the original dataset, can be gathered to one location and combined for analysis.
+Every primitive has a `combine` method, usually presented as the `+` operator, that allows aggregations of data partitions to be combined into an aggregation of the whole dataset. This operation is associative, commutative, and has an identity (the aggregator's initial state). Such an algebra is known as a _commutative monoid_, and it allows aggregation jobs to be distributed arbitrarily: the dataset may be partitioned in any way that is convenient, the data accumulated in any order, and the final result is always the same.
 
 ### Serializable
 
-Every filled aggregator has a language-independent JSON representation, allowing results to be transmitted across networks, co-processors, frameworks, and languages.
+Every filled aggregator has a language-independent JSON representation, allowing results to be transmitted across networks, co-processors, frameworks, and languages. JSON was chosen because aggregated data is supposed to be a _small_ representation of the whole. For large aggregates, consider binary JSON alternatives (such as Apache Avro).
 
 ### Verbs
 
@@ -37,31 +37,37 @@ Each type of primitive has two forms:
   * the "present tense," which knows how to fill itself;
   * the "past tense," which has lost this information due to being serialized and reconstituted.
 
-When constructing an aggregator, the data analyst defines functions for extracting the relevant quantities from the data. A present-tense aggregator uses these functions in its `fill` method to update its state. After serializing to and from JSON, an aggregator may have crossed to an entirely new language where the fill functions are no longer valid. It retains its data as a past-tense aggregator that can be combined but not filled.
+When constructing an aggregator, the data analyst defines functions for extracting the relevant quantities from the data. A present-tense aggregator uses these functions in its `fill` method to update its state. After serializing to and from JSON, an aggregator may have crossed to an entirely new language where the fill functions are no longer meaningful. It retains its data as a past-tense aggregator that can be combined but not filled.
 
-As a mnemonic, each primitive is named as a verb, with the present-tense "-ing" form for mutable, fillable aggregators and the past-tense "-ed" form for immutable, filled aggregators. The infinitive is reserved for the factory that constructs both forms and interprets JSON.
+As a mnemonic, each primitive is named as a verb, with the present-tense "-ing" form for mutable, fillable aggregators and the past-tense "-ed" form for immutable, filled aggregators. The infinitive is used for the factory that constructs both forms (if the factory pattern is used, rather than constructors). Dynamically typed languages like Python and R may use the same class for present and past tenses (named with the infinitive) with different sets of fields for the two cases.
 
 ### Exception-safe
 
 The `fill` methods only update an aggregator's state _after_ the user-defined functions have all been evaluated. An exception in a user-defined function leaves a complex aggregator in its state prior to the fill attempt, not an inconsistent state.
 
+## Version numbers
+
+Specifications are released with two digit version numbers: _major.minor._ Implementations are released with three digit version numbers: _major.minor.bugfix._
+
+The major and minor version numbers of implementations must match the major and minor numbers of the specification they implement. Bugfix numbers increase as errors are corrected and functions outside the scope of the specification are added.
+
+For example, Histogrammar-Python 0.8.5 should be adhere to version 0.8 of the specification and therefore be interoperable with Histogrammar-Scala 0.8.3. Always use the latest bugfix version, but pick a _major.minor_ version for compatibility.
+
 ## Data model
 
-The input data for all aggregators is taken to be a stream, possibly an infinite stream, of _entries._ All user-defined functions map an entry to something an aggregator can use, such as a boolean for filtering, a floating point number for computing a mean or a bin, or a string.
+The input data for all aggregators is taken to be a stream, possibly an infinite stream, of _entries._ User-defined functions map an entry to something an aggregator can use, such as a boolean for filtering, a floating point number for computing a mean or selecting a bin, or a string for categorical data.
 
-A composite aggregator may contain many plotable data structures, such as histograms, profile plots, and scatter plots, but they must all draw from a single data source. For instance, data from one Monte Carlo sample can be plotted hundreds of different ways within a composite aggregator, revealing subtle relationships in that one dataset, but it cannot compare the Monte Carlo sample with another. For that, the data analyst needs to construct independent aggregators and run separate jobs.
+A composite aggregator may contain many plotable data structures, such as histograms, profile plots, and scatter plots, but they must all be filled by a single data source. For instance, data from one sample can be plotted hundreds of different ways within a composite aggregator, revealing subtle relationships in that one dataset, but it cannot be compared with data in a qualitatively different sample (a table with different columns). For that, the data analyst needs to construct independent aggregators and run separate jobs.
 
-It may be possible to merge data from multiple sources with the equivalent of an SQL `JOIN` operation, upstream of Histogrammar, but then Histogrammar's source becomes a single dataset and the same rules apply.
+It may be possible to merge data from multiple sources with the equivalent of an SQL `JOIN` operation before it enters Histogrammar, but in that case, Histogrammar's source is still a single stream.
 
 ## Data weights
 
-Selection functions in Histogrammar are "fuzzy." They could entirely keep or entirely drop whole entries, or they could keep an entry with partial weight, like 0.5 or 0.1. A weight of 0.0 is equivalent to dropping an entry, a weight of 1.0 is equivalent to not weighting, and a weight of 2.0 is equivalent to filling with two identical events, each with weight 1.0. Negative weights are treated as 0.0 and ignored. All primitives interpret weights this same way.
+Selection functions in Histogrammar are "fuzzy." While they may entirely keep or entirely drop entries, they can also keep an entry with partial weight, such as 0.5 (half), 0.1 (tenth), or 1.5 (overweight). A weight of 0.0 is equivalent to dropping an entry, a weight of 1.0 is equivalent to not weighting, and a weight of 2.0 is equivalent to filling with two identical events, each with weight 1.0. Negative and NaN weights are treated as 0.0 and ignored. The total weight can be positive infinity, but it can never be NaN or negative. All primitives interpret weights this same way.
 
 When two selection functions are nested, their weights multiply. Different parts of a composite aggregator may apply different selections, but all of the selections applied to a particular primitive can be deduced by following the path from the root of the tree to that primitive. Composite aggregators are in this way self-documenting.
 
-Hisogrammar weights are metadata: though they are calculated from the data in user-defined functions, they are passed from one `fill` method to the next separately from the data entries themselves. Therefore, if a statistical procedure needs to make use of "negative weights," it can do so by calculating its own weights, which is simply data from Histogrammar's point of view.
-
-For example, a Count primitive accumulates the sum of Histogrammar weights, which are always non-negative. To accumulate the sum of possibly negative weights, replace Count with Sum, and give the Sum an appropriate lambda function.
+Hisogrammar weights are metadata: though they are calculated from the data in user-defined functions, they are passed from one `fill` method to the next separately from the data entries themselves. Therefore, if a statistical procedure needs to make use of "negative weights," it can do so by calculating its own weights, which is simply data from Histogrammar's point of view. For example, a Count primitive accumulates the sum of Histogrammar weights, which are always non-negative. To accumulate the sum of possibly negative weights, replace Count with Sum, and give the Sum an appropriate lambda function.
 
 ## User-defined functions
 
@@ -71,23 +77,32 @@ Histogrammar implementations must also be able to assign names to the functions 
 
 Moreover, if the analyst ever changes the units, introducing a factor of 10 in the function and changing the label to "x (mm)", this calculation and its label are correctly updated in all the histograms in which it was used. The same would not be true if all histograms that use "x (mm)" were labeled independently.
 
-### Function names in JSON
+## JSON representation
 
-Aggregators that accept a function have a `"name"` attribute in their JSON representation to carry the function name. Some of these aggregators are copied many times, such as the bins of a histogram. In these situations, the sub-aggregators have no `"name"` attributes, but the parent aggregator has a `"values:name"` to express the name only once. Examples of this are included below.
+Every primitive has a JSON _fragment_ representation, which are nested in JSON the same way the primitives themselves are nested. The fragment does not carry information about the primitive type; this information is encoded as a field in the fragment's parent. This reduces redundancy in the serialized form, since containers might store large collections of sub-aggregators of the same type. The top of the tree wraps the topmost fragment in a JSON object containing
+
+  * `type` (JSON string), name of the topmost primitive type (infinitive)
+  * `data`, the fragment itself.
+
+```json
+{"type": TYPENAME, "data": FRAGMENT}
+```
+
+Thus, serializing or deserializing a whole Histogrammar document is distinct from serializing or deserializing any fragment. The whole-document serialization/deserialization functions must be available to the user, but the fragment functions may be hidden as an implementation detail.
+
+JSON fragments for primitives that accept a function have an optional `"name"` attribute in their JSON representation to carry the function name. To reduce redundancy, collections of aggregators with the same name are named once in the parent as `"values:name"` or similar. Serialization of an aggregator should not produce `"values:name"` in the parent and `"name"` in the children, but if this is encountered in deserialization, the child's `"name"` overrides the parent's `"values:name"`. Examples are included in the documentation below.
 
 ## Conventions used in this specification
 
-In the rest of this document, constructor arguments, required members, `fill`, `combine` algorithms, and JSON representations are given for each type of aggregator primitive. Histogrammar implementations should reproduce these names, calling structure, and data types exactly, though of course the notational syntax must differ.
+In the rest of this document, constructor arguments, required members, `fill`, `combine` algorithms, and JSON representations are given for each type of aggregator primitive. Histogrammar implementations should reproduce these names, calling structure, and data types exactly, though of course the syntax differs from one language to another.
+
+Implementations match if they produce the same numerical results with a relative and absolute tolerance of 10<sup>-12</sup>, exactly agree on NaN and infinite cases, exactly agree on strings/null/boolean values, produce lists in the same order, and maps with the same key-value pairs in any order. Although IEEE double precision is the standard for floating-point numbers in Histogrammar, some environments like GPUs may have only single precision floats or premultiplied integers, requiring a looser (and documented) tolerance. Results must match regardless of how the input entries are partitioned (associativity) or shuffled (commutativity).
 
 The `fill` and `combine` algorithms are expressed in Python syntax for concreteness, with a goal of clarity, not performance. (In many cases, the Python version of Histogrammar is implemented differently for performance). The fact that each primitive has required members does not preclude implementations from defining more member functions and member data, even with semi-standard names and argument lists across implementations. But they are not _required._
 
-Also, some arguments are represented here as being lists of values. If the language allows it, they may be varargs. Histogrammar implementations have a preference for varargs over explicit list types.
+Also, some arguments are represented here as lists of values. If the language allows it, they may be varargs. Histogrammar implementations have a preference for varargs over list arguments.
 
-Many arguments are declared to be double precision, and that is the standard. In some environments, such as some models of GPUs, double precision is not available, and single-precision arithmetic must be used as a substitute. Even more restricted environments (FPGAs!) are limited to premultiplied integers. Such systems can be expected to yield only approximate results.
-
-All of the primitives are deterministic and order-independent. They should always yield the same result on the same data, no matter how the data are partitioned (associativity) or shuffled (commutativity), at the level of JSON equality. (JSON equality ignores the order of key-value pairs in maps and may truncate the least significant digits of numbers.) Implementations in different languages should also yield the same results, at the level of JSON equality.
-
-If this document disagrees with the behavior of a Histogrammar implementation, this document should be taken as normative. Ultimately, disagreements would be decided in favor of the specification. For the time being, however, the specification needs to be debugged just as much as the existing implementations, so corrections on both sides are expected.
+If this document disagrees with the behavior of a Histogrammar implementation, this document should be taken as normative and the implementation should be corrected.
 
 Happy histogramming!
 
@@ -97,7 +112,7 @@ Happy histogramming!
 
 Count entries by accumulating the sum of all observed weights or a sum of transformed weights (e.g. sum of squares of weights).
 
-An optional `transform` function can be applied to the weights before summing. To accumulate the sum of squares of weights, use `lambda x: x**2`, for instance. This is unlike any other primitive's `quantity` function in that its domain is the _weights_ (always double), not _data_ (any type).
+An optional `transform` function can be applied to the weights before summing. To accumulate the sum of squares of weights, use `lambda x: x**2`, for instance. This is unlike any other primitive's `quantity` function in that its domain is the _weights_ (always floating-point numbers), not _entries_ (any type).
 
 ### Counting constructor and required members
 
@@ -129,17 +144,34 @@ def combine(one, two):
     return Count.ed(one.entries + two.entries)
 ```
 
-### JSON format
+### JSON fragment format
 
-Simply a JSON number (or JSON string "nan", "inf", "-inf" for non-finite values) representing the `entries`. This is the only aggregator whose JSON representation is not an object.
+Simply a JSON number (or JSON string "inf" for infinite values) representing the `entries`. This is the only aggregator whose representation is not a JSON object.
 
 **Example:**
+
+Here is a stand-alone Histogrammar document representing one Count.
 
 ```json
 {"type": "Count", "data": 123.0}
 ```
 
-# First kind: aggregate a quantity without sub-aggregators
+And here is Count in a more typical context: embedded as values (and underflow, overflow, nanflow) of a [Bin](#bin-regular-binning-for-histograms).
+
+```json
+{"type": "Bin",
+ "data": {
+   "low": -5.0,
+   "high": 5.0,
+   "entries": 613.0,
+   "values:type": "Count",
+   "values": [10.0, 20.0, 20.0, 30.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0],
+   "underflow:type": "Count", "underflow": 5.0,
+   "overflow:type": "Count", "overflow": 8.0,
+   "nanflow:type": "Count", "nanflow": 0.0}}
+```
+
+# First kind: aggregate data without sub-aggregators
 
 ## **Sum:** sum of a given quantity
 
@@ -179,11 +211,11 @@ def combine(one, two):
     return Sum.ed(one.entries + two.entries, one.sum + two.sum)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `sum` (JSON number, "nan", "inf", or "-inf")
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
@@ -221,6 +253,8 @@ Average.ed(entries, mean)
 
 ### Fill and combine algorithms
 
+The relevant part of the `fill` method is the three lines in its `else` clause. Complications arise when handling infinite and NaN values such that `combine` is associative.
+
 ```python
 def fill(averaging, datum, weight):
     if weight > 0.0:
@@ -254,11 +288,11 @@ def combine(one, two):
     return Average.ed(entries, mean)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `mean` (JSON number, "nan", "inf", or "-inf")
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
@@ -299,6 +333,8 @@ Deviate.ed(entries, mean, variance)
   * `variance` (double) is the variance.
 
 ### Fill and combine algorithms
+
+The relevant part of the `fill` method is the four lines in its `else` clause. Complications arise when handling infinite and NaN values such that `combine` is associative.
 
 ```python
 def fill(deviating, datum, weight):
@@ -358,11 +394,11 @@ def combine(one, two):
 
 This is only relevant for `Deviated` objects constructed by hand: `Deviating` objects aggregated in the normal way would _always_ have `mean` and `variance` in their initial state if `entries == 0.0` (because negative weights cannot contribute).
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `mean` (JSON number, "nan", "inf", or "-inf")
   * `variance` (JSON number, "nan", "inf", or "-inf")
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -420,11 +456,11 @@ def combine(one, two):
     return Minimize.ed(entries, min)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `min` (JSON number, "nan", "inf", or "-inf")
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
@@ -481,11 +517,11 @@ def combine(one, two):
     return Maximize.ed(entries, max)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `max` (JSON number, "nan", "inf", or "-inf")
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
@@ -551,11 +587,11 @@ def combine(one, two):
     return Bag.ed(entries, values)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `values` (JSON array of JSON objects containing `w` (JSON number), the total weight of entries for a unique value and `v` (JSON number, array of numbers, or string), the value); canonical form is sorted by `v` (lexicographically)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
@@ -597,7 +633,7 @@ JSON object containing
      {"w": 30.0, "v": "two"}]}}
 ```
 
-# Second kind: pass to sub-aggregators based on data
+# Second kind: pass to different sub-aggregators based on values seen in data
 
 ## **Bin:** regular binning for histograms
 
@@ -684,13 +720,13 @@ def combine(one, two):
     return Bin.ed(one.low, one.high, entries, values, underflow, overflow, nanflow)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
   * `low` (JSON number)
   * `high` (JSON number)
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `values:type` (JSON string), name of the values sub-aggregator type
   * `values` (JSON array of sub-aggregators)
   * `underflow:type` (JSON string), name of the underflow sub-aggregator type
@@ -828,12 +864,12 @@ def combine(one, two):
                           bins, nanflow, one.origin)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
   * `binWidth` (JSON number)
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `bins:type` (JSON string), name of the bins sub-aggregator type
   * `bins` (JSON object), keys are string representations of the bin indexes (decimal, no leading zeros) and values are sub-aggregators
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
@@ -861,7 +897,7 @@ JSON object containing
 
 Split a quantity into bins defined by irregularly spaced bin centers, with exactly one sub-aggregator filled per datum (the closest one).
 
-Unlike irregular bins defined by explicit ranges, irregular bins defined by bin centers are guaranteed to fully partition the space with no gaps and no overlaps. It could be viewed as cluster scoring in one dimension.
+Unlike irregular bins defined by low-high ranges, irregular bins defined by bin centers are guaranteed to fully partition the space with no gaps and no overlaps. It could be viewed as cluster scoring in one dimension.
 
 ### CentrallyBinning constructor and required members
 
@@ -918,11 +954,11 @@ def combine(one, two):
     return CentrallyBin.ed(entries, bins, nanflow)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `bins:type` (JSON string), name of the bins sub-aggregator type
   * `bins` (JSON array of JSON objects containing `center` (JSON number) and `value` (sub-aggregator)), collection of bin centers and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
@@ -977,7 +1013,7 @@ Accumulate a suite of aggregators, each between two thresholds, filling exactly 
 
 This is a variation on [Stack](#stack-cumulative-filling), which fills `N + 1` aggregators with `N` successively tighter cut thresholds. IrregularlyBin fills `N + 1` aggregators in the non-overlapping intervals between `N` thresholds.
 
-IrregularlyBin is also similar to [CentrallyBin](#centrallybin-fully-partitioning-with-centers), in that they both partition a space into irregular subdomains with no gaps and no overlaps. However, CentrallyBin is defined by bin centers and IrregularlyBin is defined by bin edges, the first and last of which are at negative and positive infinity.
+IrregularlyBin is also similar to [CentrallyBin](#centrallybin-fully-partitioning-with-centers), in that they both partition a space into irregular subdomains with no gaps and no overlaps. However, CentrallyBin is defined by bin centers and IrregularlyBin is defined by bin low edges, the first of which is negative infinity (inclusive) and the last is implicitly positive infinity (inclusive).
 
 ### IrregularlyBinning constructor and required members
 
@@ -1028,11 +1064,11 @@ def combine(one, two):
     return IrregularlyBin.ed(entries, bins, nanflow)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `type` (JSON string), name of the sub-aggregator type
   * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
@@ -1129,11 +1165,11 @@ def combine(one, two):
     return Categorize.ed(entries, contentType, pairs)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `type` (JSON string), name of the sub-aggregator type
   * `data` (JSON object), keys are the string-valued categories and values are sub-aggregators
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -1157,6 +1193,8 @@ Accumulate two aggregators, one containing only entries that pass a given select
 The aggregator may be a simple [Count](#count-sum-of-weights) to measure the efficiency of a cut, a [Bin](#bin-regular-binning-for-histograms) to plot a turn-on curve, or anything else to be tested with and without a cut.
 
 As a side effect of NaN values returning false for any comparison, a NaN return value from the selection is treated as a failed cut (the denominator is filled but the numerator is not).
+
+Note that the selection function can return any non-negative number. Fractional selections would fractionally weight the numerator and would not affect the denominator. It is even possible to make the numerator exceed the denominator with weights greater than 1.0.
 
 ### Fractioning constructor and required members
 
@@ -1212,11 +1250,11 @@ def build(numerator, denominator):
     return Fraction.ed(denominator.entries, numerator, denominator)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `type` (JSON string), name of the numerator/denominator type
   * `numerator` (sub-aggregator)
   * `denominator` (sub-aggregator)
@@ -1266,7 +1304,7 @@ This is a generalization of [Fraction](#fraction-efficiency-plots), which fills 
 
 The thresholds are presented in increasing order and the computed value must be greater than or equal to a threshold to fill the corresponding bin, and therefore the number of entries in each filled bin is greatest in the first and least in the last.
 
-Although this aggregation could be visualized as a stack of histograms, stacked histograms usually represent a different thing: data from different sources, rather than different cuts on the same source. For example, it is common to stack Monte Carlo samples from different backgrounds to show that they add up to the observed data. The Stack aggregator does not make plots of this type because aggregation trees in Histogrammar draw data from exactly one source.
+Although this aggregation could be plotted as a stack of histograms, stacks of histograms are often used to represent something different: data from different sources, rather than cuts on the same source. For example, it is common to stack distributions from different Monte Carlo simulations to show that they add up to the observed data. The Stack aggregator does not make plots of this type because aggregation trees in Histogrammar draw data from exactly one source.
 
 To make plots from different sources in Histogrammar, one must perform separate aggregation runs. It may then be convenient to stack the results of those runs as though they were created with a Stack aggregation, so that plotting code can treat both cases uniformly. For this reason, Stack has an alternate constructor to build a Stack manually from distinct aggregators, even if those aggregators came from different aggregation runs.
 
@@ -1336,11 +1374,11 @@ def build(aggregators):
     return Stack.ed(entries, bins, Count.ed(0.0))
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `type` (JSON string), name of the sub-aggregator type
   * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
@@ -1391,6 +1429,8 @@ Select also resembles [Fraction](#fraction-efficiency-plots), but without the `d
 
 The efficiency of a cut in a Select aggregator named `x` is simply `x.cut.entries / x.entries` (because all aggregators have an `entries` member).
 
+Note that the selection function can return any non-negative number. Fractional selections would fractionally weight the sub-aggregator.
+
 ### Selecting constructor and required members
 
 ```python
@@ -1426,11 +1466,11 @@ def combine(one, two):
     return Select.ed(entries, cut)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `type` (JSON string), name of the sub-aggregator type
   * `data` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -1483,7 +1523,7 @@ fills a scatter plot in all x-y bins that have fewer than 10 entries and only a 
 
 Limit can effectively swap between two descriptions if it is embedded in a collection, such as [Branch](#branch-tuple-of-different-types). All elements of the collection would be filled until the Limit saturates, leaving only the low-detail one. For instance, one could aggregate several [SparselyBin](#sparselybin-ignore-zeros) histograms, each with a different `binWidth`, and progressively eliminate them in order of increasing `binWidth`.
 
-Note that Limit saturates when it reaches a specified _total weight,_ not the number of data points in a [Bag](#bag-accumulate-values-for-scatter-plots), so it is not certain to control memory use. However, the total weight is of more use to data analysis.
+Note that Limit saturates when it reaches a specified _total weight,_ not the number of data points in a [Bag](#bag-accumulate-values-for-scatter-plots), so it is not guaranteed to control memory use. (Imagine a dataset with many small weights.) However, the total weight is a more useful metric in data analysis.
 
 ### Limiting constructor and required members
 
@@ -1529,11 +1569,11 @@ def combine(one, two):
     return Limit.ed(entries, one.limit, one.contentType, value)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `limit` (JSON number)
   * `type` (JSON string), name of the sub-aggregator type
   * `data` (sub-aggregator or JSON null)
@@ -1565,7 +1605,7 @@ JSON object containing
    "data": null}}
 ```
 
-# Third kind: pass to every sub-aggregator
+# Third kind: broadcast to every sub-aggregator, independent of data
 
 ## **Label:** directory with string-based keys
 
@@ -1617,11 +1657,11 @@ def combine(one, two):
     return Label.ed(entries, pairs)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `type` (JSON string), name of the sub-aggregator type
   * `data` (JSON object), keys are the labels and values are sub-aggregators
 
@@ -1688,11 +1728,11 @@ def combine(one, two):
     return UntypedLabel.ed(entries, pairs)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `data` (JSON object mapping labels to JSON objects containing `type` (JSON string), name of sub-aggregator type and `data` (sub-aggregator))
 
 The fact that UntypedLabel allows each element to have a different type forces the `type` annotation to be nested with the sub-aggregator. For collections that actually contain only one type, [Label](#label-directory-with-string-based-keys) avoids this redundancy.
@@ -1772,11 +1812,11 @@ def combine(one, two):
     return Index.ed(entries, values)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `type` (JSON string), name of the sub-aggregator type
   * `data` (JSON array of aggregators)
 
@@ -1857,11 +1897,11 @@ def combine(one, two):
     return Branch.ed(entries, values)
 ```
 
-### JSON format
+### JSON fragment format
 
 JSON object containing
 
-  * `entries` (JSON number, "nan", "inf", or "-inf")
+  * `entries` (JSON number or "inf")
   * `data` (JSON array of JSON objects containing `type` (JSON string), name of sub-aggregator type and `data` (sub-aggregator))
 
 **Example:**
@@ -1890,20 +1930,29 @@ JSON object containing
        "nanflow": 0.0}}]}}
 ```
 
-# Aliases: common compositions
+# Aliases: common functions and compositions
 
 Although the following could be constructed by hand, they are so often used in data analyses that they have their own constructors. They are not distinct types, though: an aggregator created by explicit construction is completely interchangeable with an aggregator created by one of the following convenience functions.
 
-## Unweighted function
+## Identity
 
-A function named `"unweighted"` exists in the Histogrammar namespace with the following definition:
+A transform (for [Count](#count-sum-of-weights)) named `"identity"` exists in the Histogrammar namespace with the following definition:
+
+```python
+def identity(weight):
+    return weight
+```
+
+## Unweighted
+
+A weighting function named `"unweighted"` exists in the Histogrammar namespace with the following definition:
 
 ```python
 def unweighted(datum):
     return 1.0
 ```
 
-## **Histogram**
+## Histogram
 
 An interval is divided into bins and the number of entries (sum of weights) is counted in each bin. All plotting front-ends should be capable of displaying this.
 
@@ -1919,7 +1968,7 @@ def Histogram(num, low, high, quantity, selection=unweighted):
   * `quantity` (function returning double) computes the quantity to bin from the data.
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
 
-## **SparselyHistogram**
+## SparselyHistogram
 
 No memory is allocated for empty bins. This allows the analyst to plot a whole distribution without first knowing its support. (The analyst must have an appropriate choice of bin width, however.) Most plotting front-ends convert it into a dense representation immediately before plotting.
 
@@ -1936,7 +1985,7 @@ def SparselyHistogram(binWidth, quantity, selection=unweighted, origin=0.0):
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
   * `origin` (double) is the left edge of the bin whose index is 0.
 
-## **Profile**
+## Profile
 
 Views a two-dimensional dataset as a function by binning along one axis and averaging the other.
 
@@ -1956,7 +2005,7 @@ def Profile(num, low, high, binnedQuantity, averagedQuantity, selection=unweight
   * `averagedQuantity` (function returning double) computes the quantity to average from the data.
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
 
-## **SparselyProfile**
+## SparselyProfile
 
 Views a two-dimensional dataset as a function by sparsely binning along one axis and averaging the other.
 
@@ -1973,7 +2022,7 @@ def SparselyProfile(binWidth, binnedQuantity, averagedQuantity, selection=unweig
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
   * `origin` (double) is the left edge of the bin whose index is 0.
 
-## **ProfileErr**
+## ProfileErr
 
 Views a two-dimensional dataset as a function by binning along one axis and averaging the other, with variances to compute the error on the mean.
 
@@ -1991,7 +2040,7 @@ def ProfileErr(num, low, high, binnedQuantity, averagedQuantity, selection=unwei
   * `averagedQuantity` (function returning double) computes the quantity to average from the data.
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
 
-## **SparselyProfileErr**
+## SparselyProfileErr
 
 Views a two-dimensional dataset as a function by sparsely binning along one axis and averaging the other, with variances to compute the error on the mean.
 
@@ -2008,7 +2057,7 @@ def SparselyProfileErr(binWidth, binnedQuantity, averagedQuantity, selection=unw
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
   * `origin` (double) is the left edge of the bin whose index is 0.
 
-## **TwoDimensionallyHistogram**
+## TwoDimensionallyHistogram
 
 Views a two-dimensional distribution in its entirety by counting the number of entries (sum of weights) in a grid of rectangular bins.
 
@@ -2031,7 +2080,7 @@ def TwoDimensionallyHistogram(xnum, xlow, xhigh, xquantity,
   * `yquantity` (function returning double) computes the quantity to bin along the y-axis from the data.
   * `selection` (function returning boolean or double) computes the quantity to use as a selection (multiplicative factor on weight).
 
-## **TwoDimensionallySparselyHistogram**
+## TwoDimensionallySparselyHistogram
 
 Views a two-dimensional distribution in its entirety by counting the number of entries (sum of weights) in a conceptual grid of rectangular bins; the bins are only filled if non-zero.
 
