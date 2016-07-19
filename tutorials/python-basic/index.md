@@ -103,7 +103,7 @@ histogram = hg.Bin(num=6, low=0, high=6, quantity=lambda x: math.log10(x), value
 for d in data:
     histogram.fill(d)
 ```
-
+i
 ### `value`, the aggregator
 Finally, we give the `value` parameter a histogrammar object that is the actual
 aggregator.  So far we have demonstrated `Count`.  `Count` is a simple counter
@@ -149,10 +149,13 @@ h = hg.Bin(20, 0, 1, lambda x: x[1], hg.Deviate(lambda x: x[0]))
 for d in data:
     h.fill(d)
 
-ax = h.matplotlib("profile plot", lw=2, color="slateblue")
+ax = h.matplotlib("profile plot", aspect=False, lw=2, color="slateblue")
 ax.set_ylabel("$\\mathrm{x}[1] \\pm 1\\sigma$")
 ax.set_xlabel("$\\mathrm{x}[0]$")
 ```
+Note that a "profile plot" usually gives the error on the mean, and can be
+turned on by setting `aspect=True`.
+
 
 ![Second plot](profilesynthetic.png)
 
