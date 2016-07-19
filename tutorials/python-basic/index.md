@@ -103,7 +103,7 @@ histogram = hg.Bin(num=6, low=0, high=6, quantity=lambda x: math.log10(x), value
 for d in data:
     histogram.fill(d)
 ```
-i
+
 ### `value`, the aggregator
 Finally, we give the `value` parameter a histogrammar object that is the actual
 aggregator.  So far we have demonstrated `Count`.  `Count` is a simple counter
