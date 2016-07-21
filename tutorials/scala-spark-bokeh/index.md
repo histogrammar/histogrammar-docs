@@ -109,8 +109,37 @@ Prepare a stacked histogram using a dedicated `build()` method, and plot it:
 ```scala
 val s = Stack.build(two,three)
 val glyph_stack = s.bokeh() //use defaults
+
 val plot_stack = plot(glyph_stack)
 save(plot_stack,"scala_plot_stack.html")
+```
+
+### Configuring Bokeh Glyph attributes and legend for Stacks of histograms
+
+When plotting stacked histograms, we are working with arrays of glyphs. One can easily configure glyph styles
+by passing arguments to `bokeh()` method as described above, only now lists of arguments containing
+values for each histogram in the Stack have to be supplied. For instance, starting with the stack of histograms two and three in the previous example, one can specify "histogram" glyph style filled with colors green and blue:
+
+```scala
+import io.continuum.bokeh._ //to allow passing Colors using native bokeh palette
+
+val s = Stack.build(two,three)
+val glyph_stack = s.bokeh(glyphTypes=List("histogram","histogram"),fillColors=List(Color.Blue,Color.Green))
+```
+
+Next, one can also specify custom axes labels:
+
+```scala
+val plot_stack = plot(xLabel="Custom x", yLabel="Custom y", glyph_stack)
+```
+
+And finally, the legend:
+
+```
+val legend = List("curve1", "curve2") zip glyph_stack.map(List(_))
+val leg = new Legend().plot(plot_stack).legends(legend)
+plot_stack.renderers <<= (leg :: _)
+save(plot_stack,"custom_scala_plot_stack.html")
 ```
 
 
