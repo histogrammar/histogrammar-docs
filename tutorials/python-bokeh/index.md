@@ -105,16 +105,45 @@ three = Histogram(5, -3.0, 7.0, lambda x: x)
 Note: only histograms with the same binning can be stacked!
 
 Now, fill it:
+
 ```python
 map(lambda _: three.fill(_),extra)
 ```
 
 Prepare a stacked histogram using a dedicated `build()` method, and plot it: 
+
 ```python
 s = Stack.build(two,three)
 glyph_stack = s.bokeh() #use defaults
+
 plot_stack = plot(glyph_stack)
 save(plot_stack,"python_plot_stack.html")
+```
+### Configuring Bokeh Glyph attributes and adding a legend for a stack of histograms
+
+When plotting stacked histograms in Python, we are working with a list of glyphs. One can easily configure glyph styles by passing arguments to `bokeh()` method as described above, only now lists of arguments containing values for each histogram in the Stack have to be supplied. 
+
+For instance, starting with the stack of histograms two and three in the previous example, one can specify "histogram" glyph style filled with colors green and blue:
+
+```python
+s = Stack.build(two,three)
+glyph_stack = s.bokeh(glyphTypes=["histogram","histogram"],fillColors=["blue","green"],lineColors=["blue","green"])
+```
+
+Next, one can also specify custom axes labels:
+
+```python
+plot_stack = plot("Custom x", "Custom y", glyph_stack)
+```
+
+And finally, add the legend:
+
+```
+from bokeh.models import Legend
+
+legend = Legend(legends=zip(["curve1", "curve2"],map(lambda x: [x],glyph_stack)))
+plot_stack.add_layout(legend)
+save(plot_stack,"custom_python_plot_stack.html")
 ```
 
 ## Bokeh server
