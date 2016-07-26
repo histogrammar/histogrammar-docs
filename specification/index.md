@@ -554,6 +554,8 @@ Bag.ing(quantity, range)
   * `entries` (mutable double) is the number of entries, initially 0.0.
   * `values` (mutable map from quantity return type to double) is the number of entries for each unique item.
 
+If the `range` parameter can be inferred from static type constraints, it may be omitted (or used as an assertion).
+
 ### Bagged constructor and required members
 
 ```python
