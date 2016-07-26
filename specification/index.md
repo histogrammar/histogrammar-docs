@@ -547,20 +547,22 @@ Consider using Bag with [Limit](#limit-keep-detail-until-entries-is-large) for c
 ### Bagging constructor and required members
 
 ```python
-Bag.ing(quantity)
+Bag.ing(quantity, range)
 ```
   * `quantity` (function returning a double, a vector of doubles, or a string) computes the quantity of interest from the data.
+  * `range` (`"N"`, `"N#"` where `#` is a positive integer, or `"S"`): the data type: number, vector of numbers, or string.
   * `entries` (mutable double) is the number of entries, initially 0.0.
   * `values` (mutable map from quantity return type to double) is the number of entries for each unique item.
 
 ### Bagged constructor and required members
 
 ```python
-Bag.ed(entries, values)
+Bag.ed(entries, values, range)
 ```
 
   * `entries` (double) is the number of entries.
   * `values` (map from double, vector of doubles, or string to double) is the number of entries for each unique item.
+  * `range` (`"N"`, `"N#"` where `#` is a positive integer, or `"S"`): the data type: number, vector of numbers, or string.
 
 ### Fill and combine algorithms
 
@@ -568,8 +570,11 @@ Bag.ed(entries, values)
 def fill(bagging, datum, weight):
     if weight > 0.0:
         q = bagging.quantity(datum)
-        if math.isnan(q):   # something to avoid NaN != NaN
-            q = "nan"       # (handling is more complex in type-safe languages)
+        if bagging.range == "N":
+            if math.isnan(q):   # something to avoid NaN != NaN
+                q = "nan"       # (handling is more complex in type-safe languages)
+        elif bagging.range[0] == "N":
+            q = tuple("nan" if math.isnan(qi) else qi for qi in q)
         bagging.entries += weight
         if q in bagging.values:
             bagging.values[q] += weight
@@ -577,6 +582,8 @@ def fill(bagging, datum, weight):
             bagging.values[q] = weight
 
 def combine(one, two):
+    if one.range != two.range:
+        raise Exception
     entries = one.entries + two.entries
     values = {}
     for v in set(one.values.keys()).union(set(two.values.keys())):
@@ -586,7 +593,7 @@ def combine(one, two):
             values[v] = one.values[v]
         elif v in two.values:
             values[v] = two.values[v]
-    return Bag.ed(entries, values)
+    return Bag.ed(entries, values, one.range)
 ```
 
 ### JSON fragment format
@@ -595,6 +602,7 @@ JSON object containing
 
   * `entries` (JSON number or "inf")
   * `values` (JSON array of JSON objects containing `w` (JSON number), the total weight of entries for a unique value and `v` (JSON number, array of numbers, or string), the value); canonical form is sorted by `v` (lexicographically)
+  * `range` (JSON string), the `range` type (see above)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
 **Examples:**
@@ -608,7 +616,8 @@ JSON object containing
      {"w": 20.0, "v": -4.0},
      {"w": 20.0, "v": -2.0},
      {"w": 30.0, "v": 0.0},
-     {"w": 30.0, "v": 2.0}]}}
+     {"w": 30.0, "v": 2.0}],
+   "range": "N"}}
 ```
 
 ```json
@@ -620,7 +629,8 @@ JSON object containing
      {"w": 20.0, "v": [3.14, 3.14, 3.14]},
      {"w": 20.0, "v": [99.0, 50.0, 1.0]},
      {"w": 30.0, "v": [7.0, 2.2, 9.8]},
-     {"w": 30.0, "v": [33.3, 66.6, 99.9]}]}}
+     {"w": 30.0, "v": [33.3, 66.6, 99.9]}],
+   "range": "N3"}}
 ```
 
 ```json
@@ -632,7 +642,8 @@ JSON object containing
      {"w": 20.0, "v": "four"},
      {"w": 20.0, "v": "one"},
      {"w": 30.0, "v": "three"},
-     {"w": 30.0, "v": "two"}]}}
+     {"w": 30.0, "v": "two"}],
+   "range": "S"}}
 ```
 
 # Second kind: pass to different sub-aggregators based on values seen in data
