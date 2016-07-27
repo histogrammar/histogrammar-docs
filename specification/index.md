@@ -242,7 +242,7 @@ Average.ing(quantity)
 
   * `quantity` (function returning double) computes the quantity of interest from the data.
   * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `mean` (mutable double) is the running mean, initially 0.0. Note that this value contributes to the total mean with weight zero (because `entries` is initially zero), so this arbitrary choice does not bias the final result.
+  * `mean` (mutable double) is the running mean, initially NaN.
 
 ### Averaged constructor and required members
 
@@ -251,7 +251,7 @@ Average.ed(entries, mean)
 ```
 
   * `entries` (double) is the number of entries.
-  * `mean` (double) is the mean.
+  * `mean` (double) is the mean or NaN if no data were observed.
 
 ### Fill and combine algorithms
 
@@ -261,6 +261,8 @@ The relevant part of the `fill` method is the three lines in its `else` clause. 
 def fill(averaging, datum, weight):
     if weight > 0.0:
         q = averaging.quantity(datum)
+        if averaging.entries == 0.0:
+            averaging.mean = 0.0               # make it not NaN (has no weight in total)
         averaging.entries += weight
 
         if math.isnan(averaging.mean) or math.isnan(q):
@@ -283,8 +285,10 @@ def fill(averaging, datum, weight):
 
 def combine(one, two):
     entries = one.entries + two.entries
-    if entries == 0.0:
-        mean = (one.mean + two.mean) / 2.0
+    if one.entries == 0.0:
+        mean = two.mean
+    elif two.entries == 0.0:
+        mean = one.mean
     else:
         mean = (one.entries*one.mean + two.entries*two.mean)/entries
     return Average.ed(entries, mean)
@@ -321,8 +325,8 @@ Deviate.ing(quantity)
 
   * `quantity` (function returning double) computes the quantity of interest from the data.
   * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `mean` (mutable double) is the running mean, initially 0.0. Note that this value contributes to the total mean with weight zero (because `entries` is initially zero), so this arbitrary choice does not bias the final result.
-  * `variance` (mutable double) is the running variance, initially 0.0. Note that this also contributes nothing to the final result.
+  * `mean` (mutable double) is the running mean, initially NaN.
+  * `variance` (mutable double) is the running sum of squared deviations from the mean, initially NaN. This is a sample variance without a correction for the one degree of freedom removed by computing it relative to the mean: for an unbiased sample variance, multiply by `entries/(entries - 1)`. If no data are observed, `variance` is NaN; if one datum is observed, `variance` is 0.0.
 
 ### Deviated constructor and required members
 
@@ -331,8 +335,8 @@ Deviate.ed(entries, mean, variance)
 ```
 
   * `entries` (double) is the number of entries.
-  * `mean` (double) is the mean.
-  * `variance` (double) is the variance.
+  * `mean` (double) is the mean or NaN if no data were observed.
+  * `variance` (double) is the sum of squared deviations from the mean or NaN if no data were observed. See above for the relation to sample variance.
 
 ### Fill and combine algorithms
 
@@ -342,6 +346,9 @@ The relevant part of the `fill` method is the four lines in its `else` clause. C
 def fill(deviating, datum, weight):
     if weight > 0.0:
         q = deviating.quantity(datum)
+        if deviating.entries == 0.0:
+            deviating.mean = 0.0              # make it not NaN (has no weight in total)
+            deviating.variance = 0.0
         varianceTimesEntries = deviating.variance * deviating.entries
         deviating.entries += weight
 
@@ -372,15 +379,18 @@ def fill(deviating, datum, weight):
 
 def combine(one, two):
     entries = one.entries + two.entries
-    if entries == 0.0:
-        mean = (one.mean + two.mean) / 2.0
+    if one.entries == 0.0:
+        mean = two.mean
+        varianceTimesEntries = two.variance * two.entries
+    elif two.entries == 0.0:
+        mean = one.mean
+        varianceTimesEntries = one.variance * one.entries
     else:
         mean = (one.entries*one.mean + two.entries*two.mean) / entries
-
-    varianceTimesEntries = one.entries*one.variance + two.entries*two.variance \
-                           + one.entries*one.mean**2 + two.entries*two.mean**2 \
-                           - 2.0*mean*(one.entries*one.mean + two.entries*two.mean) \
-                           + entries*mean**2
+        varianceTimesEntries = one.entries*one.variance + two.entries*two.variance \
+                               + one.entries*one.mean*one.mean + two.entries*two.mean*two.mean \
+                               - 2.0*mean*(one.entries*one.mean + two.entries*two.mean) \
+                               + entries*mean*mean
 
     if entries == 0.0:
         variance = varianceTimesEntries
@@ -390,11 +400,7 @@ def combine(one, two):
     return Deviate.ed(entries, mean, variance)
 ```
 
-**Note:** the `merge` function is not explicitly defined in Tony Finch's paper, but it's derivable from the algebra.
-
-**FIXME:** the last two terms in `varianceTimesEntries` can be simplified. But now that we've added a special case for `mean` when `entries` is zero, which of the factors of `mean` and `(one.entries*one.mean + two.entries*two.mean)` should use the unweighted value?
-
-This is only relevant for `Deviated` objects constructed by hand: `Deviating` objects aggregated in the normal way would _always_ have `mean` and `variance` in their initial state if `entries == 0.0` (because negative weights cannot contribute).
+**Note:** the `combine` function is not explicitly defined in Tony Finch's paper, but it's derivable from the algebra.
 
 ### JSON fragment format
 
