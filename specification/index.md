@@ -83,14 +83,17 @@ Moreover, if the analyst ever changes the units, introducing a factor of 10 in t
 
 Every primitive has a JSON _fragment_ representation, which are nested in JSON the same way the primitives themselves are nested. The fragment does not carry information about the primitive type; this information is encoded as a field in the fragment's parent. This reduces redundancy in the serialized form, since containers might store large collections of sub-aggregators of the same type. The top of the tree wraps the topmost fragment in a JSON object containing
 
+  * `version` (JSON string), the _major.minor_ version number of the specification
   * `type` (JSON string), name of the topmost primitive type (infinitive)
   * `data`, the fragment itself.
 
 ```json
-{"type": TYPENAME, "data": FRAGMENT}
+{"version": VERSION, "type": TYPENAME, "data": FRAGMENT}
 ```
 
-Thus, serializing or deserializing a whole Histogrammar document is distinct from serializing or deserializing any fragment. The whole-document serialization/deserialization functions must be available to the user, but the fragment functions may be hidden as an implementation detail.
+Thus, serializing or deserializing a whole Histogrammar document is distinct from serializing or deserializing any one primitive. The whole-document serialization/deserialization functions must be available to the user, but the fragment functions may be hidden as an implementation detail.
+
+Other key-value pairs may be included at this top level of the document as metadata for the user, and they are ignored by the deserializer. Extraneous key-value pairs are not allowed in JSON _fragments,_ however.
 
 JSON fragments for primitives that accept a function have an optional `"name"` attribute in their JSON representation to carry the function name. To reduce redundancy, collections of aggregators with the same name are named once in the parent as `"values:name"` or similar. Serialization of an aggregator should not produce `"values:name"` in the parent and `"name"` in the children, but if this is encountered in deserialization, the child's `"name"` overrides the parent's `"values:name"`. Examples are included in the documentation below.
 
@@ -155,13 +158,14 @@ Simply a JSON number (or JSON string "inf" for infinite values) representing the
 Here is a stand-alone Histogrammar document representing one Count.
 
 ```json
-{"type": "Count", "data": 123.0}
+{"version": "0.9", "type": "Count", "data": 123.0}
 ```
 
 And here is Count in a more typical context: embedded as values (and underflow, overflow, nanflow) of a [Bin](#bin-regular-binning-for-histograms).
 
 ```json
-{"type": "Bin",
+{"version": "0.9",
+ "type": "Bin",
  "data": {
    "low": -5.0,
    "high": 5.0,
@@ -224,7 +228,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "Sum",
+{"version": "0.9",
+ "type": "Sum",
  "data": {"entries": 123.0, "sum": 3.14, "name": "myfunc"}}
 ```
 
@@ -305,7 +310,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "Average",
+{"version": "0.9",
+ "type": "Average",
  "data": {"entries": 123.0, "mean": 3.14, "name": "myfunc"}}
 ```
 
@@ -414,7 +420,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "Deviate",
+{"version": "0.9",
+ "type": "Deviate",
  "data": {"entries": 123.0, "mean": 3.14, "variance": 0.1, "name": "myfunc"}}
 ```
 
@@ -475,7 +482,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "Minimize",
+{"version": "0.9",
+ "type": "Minimize",
  "data": {"entries": 123.0, "min": 3.14, "name": "myfunc"}}
 ```
 
@@ -536,7 +544,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "Maximize",
+{"version": "0.9",
+ "type": "Maximize",
  "data": {"entries": 123.0, "max": 3.14, "name": "myfunc"}}
 ```
 
@@ -616,7 +625,8 @@ JSON object containing
 **Examples:**
 
 ```json
-{"type": "Bag",
+{"version": "0.9",
+ "type": "Bag",
  "data": {
    "entries": 123.0,
    "values": [
@@ -629,7 +639,8 @@ JSON object containing
 ```
 
 ```json
-{"type": "Bag",
+{"version": "0.9",
+ "type": "Bag",
  "data": {
    "entries": 123.0,
    "values": [
@@ -642,7 +653,8 @@ JSON object containing
 ```
 
 ```json
-{"type": "Bag",
+{"version": "0.9",
+ "type": "Bag",
  "data": {
    "entries": 123.0,
    "values": [
@@ -764,7 +776,8 @@ JSON object containing
 Here is a five-bin histogram, whose bin centers are at -4, -2, 0, 2, and 4. It counts the number of measurements made at each position.
 
 ```json
-{"type": "Bin",
+{"version": "0.9",
+ "type": "Bin",
  "data": {
    "low": -5.0,
    "high": 5.0,
@@ -783,7 +796,8 @@ Here is a five-bin histogram, whose bin centers are at -4, -2, 0, 2, and 4. It c
 Here is another five-bin histogram on the same domain, this one quantifying an average value in each bin. The quantity measured by the average has a name (`"average time [s]"`), which would have been a `"name"` field in the JSON objects representing the averages if it had not been specified once in `"values:name"`.
 
 ```json
-{"type": "Bin",
+{"version": "0.9",
+ "type": "Bin",
  "data": {
    "low": -5.0,
    "high": 5.0,
@@ -902,7 +916,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "SparselyBin",
+{"version": "0.9",
+ "type": "SparselyBin",
  "data": {
    "binWidth": 2.0,
    "entries": 123.0,
@@ -990,7 +1005,8 @@ JSON object containing
 **Examples:**
 
 ```json
-{"type": "CentrallyBin",
+{"version": "0.9",
+ "type": "CentrallyBin",
  "data": {
    "entries": 123.0,
    "bins:type": "Count",
@@ -1010,7 +1026,8 @@ JSON object containing
 Here is an example with `Average` sub-aggregators:
 
 ```json
-{"type": "CentrallyBin",
+{"version": "0.9",
+ "type": "CentrallyBin",
  "data": {
    "entries": 123.0,
    "bins:type": "Average",
@@ -1100,7 +1117,8 @@ JSON object containing
 **Examples:**
 
 ```json
-{"type": "IrregularlyBin",
+{"version": "0.9",
+ "type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
    "type": "Count",
@@ -1116,7 +1134,8 @@ JSON object containing
 ```
 
 ```json
-{"type": "IrregularlyBin",
+{"version": "0.9",
+ "type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
    "type": "Average",
@@ -1199,7 +1218,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "Categorize",
+{"version": "0.9",
+ "type": "Categorize",
  "data": {
    "entries": 123.0,
    "type": "Count",
@@ -1285,7 +1305,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "Fraction",
+{"version": "0.9",
+ "type": "Fraction",
  "data": {
    "entries": 123.0,
    "name": "trigger",
@@ -1410,7 +1431,8 @@ JSON object containing
 **Examples:**
 
 ```json
-{"type": "Stack",
+{"version": "0.9",
+ "type": "Stack",
  "data": {
    "entries": 123.0,
    "type": "Count",
@@ -1426,7 +1448,8 @@ JSON object containing
 ```
 
 ```json
-{"type": "Stack",
+{"version": "0.9",
+ "type": "Stack",
  "data": {
    "entries": 123.0,
    "type": "Average",
@@ -1499,7 +1522,8 @@ JSON object containing
 **Examples:**
 
 ```json
-{"type": "Select",
+{"version": "0.9",
+ "type": "Select",
  "data": {
    "entries": 123.0,
    "name": "trigger",
@@ -1508,7 +1532,8 @@ JSON object containing
 ```
 
 ```json
-{"type": "Select",
+{"version": "0.9",
+ "type": "Select",
  "data": {
    "entries": 123.0,
    "name": "trigger",
@@ -1602,7 +1627,8 @@ JSON object containing
 **Examples:**
 
 ```json
-{"type": "Limit",
+{"version": "0.9",
+ "type": "Limit",
  "data": {
    "entries": 98.0,
    "limit": 100.0,
@@ -1618,7 +1644,8 @@ JSON object containing
 ```
 
 ```json
-{"type": "Limit",
+{"version": "0.9",
+ "type": "Limit",
  "data": {
    "entries": 123.0,
    "limit": 100.0,
@@ -1691,7 +1718,8 @@ The fact that Label requires all contents to have a single type allows the `type
 **Example:**
 
 ```json
-{"type": "Label",
+{"version": "0.9",
+ "type": "Label",
  "data": {
    "entries": 123.0,
    "type": "Average",
@@ -1761,7 +1789,8 @@ The fact that UntypedLabel allows each element to have a different type forces t
 **Example:**
 
 ```json
-{"type": "UntypedLabel",
+{"version": "0.9",
+ "type": "UntypedLabel",
  "data": {
    "entries": 123.0,
    "data": {
@@ -1846,7 +1875,8 @@ The fact that Index requires all contents to have a single type allows the `type
 **Example:**
 
 ```json
-{"type": "Index",
+{"version": "0.9",
+ "type": "Index",
  "data": {
    "entries": 123.0,
    "type": "Average",
@@ -1928,7 +1958,8 @@ JSON object containing
 **Example:**
 
 ```json
-{"type": "Branch",
+{"version": "0.9",
+ "type": "Branch",
  "data": {
    "entries": 123.0,
    "data": [
