@@ -235,7 +235,7 @@ scala -cp target/histogrammar-0.7.jar
 On the local computer, start a HistogrammarWatch with ssh as its command:
 
 ```bash
-hgwatch -i -c "ssh REMOTE -x cat intermediate.json --root"
+hgwatch -i -c "ssh REMOTE -x cat intermediate.json" --root
 ```
 
 where `REMOTE` is the address of the remote computer (and supply a user name, etc., if you need to). If your ssh prompts you with a password, you can't use the `-i` (interactive) option, since the Python input loop interferes with the password prompt.
@@ -290,7 +290,7 @@ for a connection from your local computer to `StepA`, from there to `StepB`, and
 Now when you
 
 ```bash
-hgwatch -i -c "ssh REMOTE -x cat intermediate.json --root"
+hgwatch -i -c "ssh REMOTE -x cat intermediate.json" --root
 ```
 
 use the final destination (`StepC` in the above example) as your `REMOTE`. If any of the steps require a password, you can't use the `-i` (interactive) option.
