@@ -996,7 +996,7 @@ JSON object containing
 
   * `entries` (JSON number or "inf")
   * `bins:type` (JSON string), name of the bins sub-aggregator type
-  * `bins` (JSON array of JSON objects containing `center` (JSON number) and `value` (sub-aggregator)), collection of bin centers and their associated data
+  * `bins` (JSON array of JSON objects containing `center` (JSON number) and `data` (sub-aggregator)), collection of bin centers and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -1011,13 +1011,13 @@ JSON object containing
    "entries": 123.0,
    "bins:type": "Count",
    "bins": [
-     {"center": -999.0, "value": 5.0},
-     {"center": -4.0, "value": 10.0},
-     {"center": -2.0, "value": 20.0},
-     {"center": 0.0, "value": 20.0},
-     {"center": 2.0, "value": 30.0},
-     {"center": 4.0, "value": 30.0},
-     {"center": 12345.0, "value": 8.0}],
+     {"center": -999.0, "data": 5.0},
+     {"center": -4.0, "data": 10.0},
+     {"center": -2.0, "data": 20.0},
+     {"center": 0.0, "data": 20.0},
+     {"center": 2.0, "data": 30.0},
+     {"center": 4.0, "data": 30.0},
+     {"center": 12345.0, "data": 8.0}],
    "nanflow:type": "Count",
    "nanflow": 0.0,
    "name": "myfunc"}}
@@ -1032,13 +1032,13 @@ Here is an example with `Average` sub-aggregators:
    "entries": 123.0,
    "bins:type": "Average",
    "bins": [
-     {"center": -999.0, "value": 5.0, "mean": -1.0},
-     {"center": -4.0, "value": 10.0, "mean": 4.25},
-     {"center": -2.0, "value": 20.0, "mean": 16.21},
-     {"center": 0.0, "value": 20.0, "mean": 20.28},
-     {"center": 2.0, "value": 20.0, "mean": 16.19},
-     {"center": 4.0, "value": 30.0, "mean": 4.23},
-     {"center": 12345.0, "value": 8.0, "mean": -1.0}],
+     {"center": -999.0, "data": {"entries": 5.0, "mean": -1.0}},
+     {"center": -4.0, "data": {"entries": 10.0, "mean": 4.25}},
+     {"center": -2.0, "data": {"entries": 20.0, "mean": 16.21}},
+     {"center": 0.0, "data": {"entries": 20.0, "mean": 20.28}},
+     {"center": 2.0, "data": {"entries": 20.0, "mean": 16.19}},
+     {"center": 4.0, "data": {"entries": 30.0, "mean": 4.23}},
+     {"center": 12345.0, "data": {"entries": 8.0, "mean": -1.0}}],
    "nanflow:type": "Count",
    "nanflow": 0.0,
    "name": "myfunc",
@@ -1107,12 +1107,12 @@ def combine(one, two):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
-  * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
+  * `bins:type` (JSON string), name of the sub-aggregator type
+  * `bins` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
-  * optional `data:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
+  * optional `bins:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
 
 **Examples:**
 
@@ -1121,8 +1121,8 @@ JSON object containing
  "type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
-   "type": "Count",
-   "data": [
+   "bins:type": "Count",
+   "bins": [
      {"atleast": "-inf", "data": 23.0},
      {"atleast": 1.0, "data": 20.0},
      {"atleast": 2.0, "data": 20.0},
@@ -1138,8 +1138,8 @@ JSON object containing
  "type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
-   "type": "Average",
-   "data": [
+   "bins:type": "Average",
+   "bins": [
      {"atleast": "-inf", "data": {"entries": 23.0, "mean": 3.14}},
      {"atleast": 1.0, "data": {"entries": 20.0, "mean": 2.28}},
      {"atleast": 2.0, "data": {"entries": 20.0, "mean": 1.16}},
