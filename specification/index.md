@@ -1056,7 +1056,7 @@ IrregularlyBin is also similar to [CentrallyBin](#centrallybin-fully-partitionin
 ### IrregularlyBinning constructor and required members
 
 ```python
-IrregularlyBin.ing(thresholds, quantity, value, nanflow)
+IrregularlyBin.ing(thresholds, quantity, value=Count.ing(), nanflow=Count.ing())
 ```
 
   * `thresholds` (list of doubles) specifies `N` lower cut thresholds, so the IrregularlyBin will fill `N + 1` aggregators in distinct intervals.
@@ -1146,7 +1146,9 @@ JSON object containing
      {"atleast": 3.0, "data": {"entries": 30.0, "mean": 8.9}},
      {"atleast": 4.0, "data": {"entries": 30.0, "mean": 22.7}}],
    "nanflow:type": "Count",
-   "nanflow": 0.0}}
+   "nanflow": 0.0,
+   "name": "myfunc",
+   "bins:name": "myfunc2"}}
 ```
 
 ## **Categorize:** string-valued bins, bar charts
@@ -1353,7 +1355,7 @@ To make plots from different sources in Histogrammar, one must perform separate 
 ### Stacking constructor and required members
 
 ```python
-Stack.ing(thresholds, quantity, value, nanflow)
+Stack.ing(thresholds, quantity, value=Count.ing(), nanflow=Count.ing())
 ```
 
   * `thresholds` (list of doubles) specifies `N` lower cut thresholds, so the Stack will fill `N + 1` aggregators, each overlapping the last.
@@ -1421,12 +1423,12 @@ def build(aggregators):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
-  * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
+  * `bins:type` (JSON string), name of the sub-aggregator type
+  * `bins` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
-  * optional `data:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
+  * optional `bins:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
 
 **Examples:**
 
@@ -1435,8 +1437,8 @@ JSON object containing
  "type": "Stack",
  "data": {
    "entries": 123.0,
-   "type": "Count",
-   "data": [
+   "bins:type": "Count",
+   "bins": [
      {"atleast": "-inf", "data": 123.0},
      {"atleast": 1.0, "data": 100.0},
      {"atleast": 2.0, "data": 82.0},
@@ -1452,15 +1454,17 @@ JSON object containing
  "type": "Stack",
  "data": {
    "entries": 123.0,
-   "type": "Average",
-   "data": [
+   "bins:type": "Average",
+   "bins": [
      {"atleast": "-inf", "data": {"entries": 123.0, "mean": 3.14}},
      {"atleast": 1.0, "data": {"entries": 100.0, "mean": 2.28}},
      {"atleast": 2.0, "data": {"entries": 82.0, "mean": 1.16}},
      {"atleast": 3.0, "data": {"entries": 37.0, "mean": 8.9}},
      {"atleast": 4.0, "data": {"entries": 4.0, "mean": 22.7}}],
    "nanflow:type": "Count",
-   "nanflow": 0.0}}
+   "nanflow": 0.0,
+   "name": "myfunc",
+   "bins:name": "myfunc2"}}
 ```
 
 ## **Select:** apply a cut
