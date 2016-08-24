@@ -1298,7 +1298,7 @@ def build(numerator, denominator):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the numerator/denominator type
+  * `sub:type` (JSON string), name of the numerator/denominator type
   * `numerator` (sub-aggregator)
   * `denominator` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -1313,7 +1313,7 @@ JSON object containing
    "entries": 123.0,
    "name": "trigger",
    "sub:name": "energy [GeV]",
-   "type": "Bin",
+   "sub:type": "Bin",
    "numerator": {
      "low": -5.0,
      "high": 5.0,
@@ -1482,7 +1482,7 @@ Note that the selection function can return any non-negative number. Fractional 
 ### Selecting constructor and required members
 
 ```python
-Select.ing(quantity, cut)
+Select.ing(quantity, cut=Count())
 ```
 
   * `quantity` (function returning boolean or double) computes the quantity of interest from the data and interprets it as a selection (multiplicative factor on weight).
@@ -1519,7 +1519,7 @@ def combine(one, two):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
+  * `sub:type` (JSON string), name of the sub-aggregator type
   * `data` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
@@ -1531,7 +1531,7 @@ JSON object containing
  "data": {
    "entries": 123.0,
    "name": "trigger",
-   "type": "Count",
+   "sub:type": "Count",
    "data": 98.0}}
 ```
 
@@ -1542,7 +1542,7 @@ JSON object containing
    "entries": 123.0,
    "name": "trigger",
    "sub:name": "energy [GeV]",
-   "type": "Bin",
+   "sub:type": "Bin",
    "data": {
      "low": -5.0,
      "high": 5.0,
