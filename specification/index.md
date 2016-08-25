@@ -557,8 +557,6 @@ A bag is the appropriate data type for scatter plots: a container that collects 
 
 Although the user-defined function may return scalar numbers, fixed-dimension vectors of numbers, or categorical strings, it may not mix types. Different Bag primitives in an analysis tree may collect different types.
 
-Consider using Bag with [Limit](#limit-keep-detail-until-entries-is-large) for collections that roll over to a mere count when they exceed a limit.
-
 ### Bagging constructor and required members
 
 ```python
@@ -996,7 +994,7 @@ JSON object containing
 
   * `entries` (JSON number or "inf")
   * `bins:type` (JSON string), name of the bins sub-aggregator type
-  * `bins` (JSON array of JSON objects containing `center` (JSON number) and `value` (sub-aggregator)), collection of bin centers and their associated data
+  * `bins` (JSON array of JSON objects containing `center` (JSON number) and `data` (sub-aggregator)), collection of bin centers and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -1011,13 +1009,13 @@ JSON object containing
    "entries": 123.0,
    "bins:type": "Count",
    "bins": [
-     {"center": -999.0, "value": 5.0},
-     {"center": -4.0, "value": 10.0},
-     {"center": -2.0, "value": 20.0},
-     {"center": 0.0, "value": 20.0},
-     {"center": 2.0, "value": 30.0},
-     {"center": 4.0, "value": 30.0},
-     {"center": 12345.0, "value": 8.0}],
+     {"center": -999.0, "data": 5.0},
+     {"center": -4.0, "data": 10.0},
+     {"center": -2.0, "data": 20.0},
+     {"center": 0.0, "data": 20.0},
+     {"center": 2.0, "data": 30.0},
+     {"center": 4.0, "data": 30.0},
+     {"center": 12345.0, "data": 8.0}],
    "nanflow:type": "Count",
    "nanflow": 0.0,
    "name": "myfunc"}}
@@ -1032,13 +1030,13 @@ Here is an example with `Average` sub-aggregators:
    "entries": 123.0,
    "bins:type": "Average",
    "bins": [
-     {"center": -999.0, "value": 5.0, "mean": -1.0},
-     {"center": -4.0, "value": 10.0, "mean": 4.25},
-     {"center": -2.0, "value": 20.0, "mean": 16.21},
-     {"center": 0.0, "value": 20.0, "mean": 20.28},
-     {"center": 2.0, "value": 20.0, "mean": 16.19},
-     {"center": 4.0, "value": 30.0, "mean": 4.23},
-     {"center": 12345.0, "value": 8.0, "mean": -1.0}],
+     {"center": -999.0, "data": {"entries": 5.0, "mean": -1.0}},
+     {"center": -4.0, "data": {"entries": 10.0, "mean": 4.25}},
+     {"center": -2.0, "data": {"entries": 20.0, "mean": 16.21}},
+     {"center": 0.0, "data": {"entries": 20.0, "mean": 20.28}},
+     {"center": 2.0, "data": {"entries": 20.0, "mean": 16.19}},
+     {"center": 4.0, "data": {"entries": 30.0, "mean": 4.23}},
+     {"center": 12345.0, "data": {"entries": 8.0, "mean": -1.0}}],
    "nanflow:type": "Count",
    "nanflow": 0.0,
    "name": "myfunc",
@@ -1056,7 +1054,7 @@ IrregularlyBin is also similar to [CentrallyBin](#centrallybin-fully-partitionin
 ### IrregularlyBinning constructor and required members
 
 ```python
-IrregularlyBin.ing(thresholds, quantity, value, nanflow)
+IrregularlyBin.ing(thresholds, quantity, value=Count.ing(), nanflow=Count.ing())
 ```
 
   * `thresholds` (list of doubles) specifies `N` lower cut thresholds, so the IrregularlyBin will fill `N + 1` aggregators in distinct intervals.
@@ -1107,12 +1105,12 @@ def combine(one, two):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
-  * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
+  * `bins:type` (JSON string), name of the sub-aggregator type
+  * `bins` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
-  * optional `data:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
+  * optional `bins:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
 
 **Examples:**
 
@@ -1121,8 +1119,8 @@ JSON object containing
  "type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
-   "type": "Count",
-   "data": [
+   "bins:type": "Count",
+   "bins": [
      {"atleast": "-inf", "data": 23.0},
      {"atleast": 1.0, "data": 20.0},
      {"atleast": 2.0, "data": 20.0},
@@ -1138,15 +1136,17 @@ JSON object containing
  "type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
-   "type": "Average",
-   "data": [
+   "bins:type": "Average",
+   "bins": [
      {"atleast": "-inf", "data": {"entries": 23.0, "mean": 3.14}},
      {"atleast": 1.0, "data": {"entries": 20.0, "mean": 2.28}},
      {"atleast": 2.0, "data": {"entries": 20.0, "mean": 1.16}},
      {"atleast": 3.0, "data": {"entries": 30.0, "mean": 8.9}},
      {"atleast": 4.0, "data": {"entries": 30.0, "mean": 22.7}}],
    "nanflow:type": "Count",
-   "nanflow": 0.0}}
+   "nanflow": 0.0,
+   "name": "myfunc",
+   "bins:name": "myfunc2"}}
 ```
 
 ## **Categorize:** string-valued bins, bar charts
@@ -1210,8 +1210,8 @@ def combine(one, two):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
-  * `data` (JSON object), keys are the string-valued categories and values are sub-aggregators
+  * `bins:type` (JSON string), name of the sub-aggregator type
+  * `bins` (JSON object), keys are the string-valued categories and values are sub-aggregators
   * optional `name` (JSON string), name of the `quantity` function, if provided.
   * optional `bins:name` (JSON string), name of the `quantity` function used by each bin value. If specified here, it is _not_ specified in all the values, thereby streamlining the JSON.
 
@@ -1222,8 +1222,8 @@ JSON object containing
  "type": "Categorize",
  "data": {
    "entries": 123.0,
-   "type": "Count",
-   "data": {"one": 23.0, "two": 20.0, "three": 20.0, "four": 30.0, "five": 30.0},
+   "bins:type": "Count",
+   "bins": {"one": 23.0, "two": 20.0, "three": 20.0, "four": 30.0, "five": 30.0},
    "name": "myfunc"}}
 ```
 
@@ -1296,7 +1296,7 @@ def build(numerator, denominator):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the numerator/denominator type
+  * `sub:type` (JSON string), name of the numerator/denominator type
   * `numerator` (sub-aggregator)
   * `denominator` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
@@ -1311,7 +1311,7 @@ JSON object containing
    "entries": 123.0,
    "name": "trigger",
    "sub:name": "energy [GeV]",
-   "type": "Bin",
+   "sub:type": "Bin",
    "numerator": {
      "low": -5.0,
      "high": 5.0,
@@ -1353,7 +1353,7 @@ To make plots from different sources in Histogrammar, one must perform separate 
 ### Stacking constructor and required members
 
 ```python
-Stack.ing(thresholds, quantity, value, nanflow)
+Stack.ing(thresholds, quantity, value=Count.ing(), nanflow=Count.ing())
 ```
 
   * `thresholds` (list of doubles) specifies `N` lower cut thresholds, so the Stack will fill `N + 1` aggregators, each overlapping the last.
@@ -1421,12 +1421,12 @@ def build(aggregators):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
-  * `data` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
+  * `bins:type` (JSON string), name of the sub-aggregator type
+  * `bins` (JSON array of JSON objects containing `atleast` (JSON number or "-inf") and `data` (sub-aggregator)), collection of lower cut thresholds (including minus infinity) and their associated data
   * `nanflow:type` (JSON string), name of the nanflow sub-aggregator type
   * `nanflow` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
-  * optional `data:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
+  * optional `bins:name` (JSON string), name of the `quantity` function used by the sub-aggregators. If specified here, it is _not_ specified in all the sub-aggregators, thereby streamlining the JSON.
 
 **Examples:**
 
@@ -1435,8 +1435,8 @@ JSON object containing
  "type": "Stack",
  "data": {
    "entries": 123.0,
-   "type": "Count",
-   "data": [
+   "bins:type": "Count",
+   "bins": [
      {"atleast": "-inf", "data": 123.0},
      {"atleast": 1.0, "data": 100.0},
      {"atleast": 2.0, "data": 82.0},
@@ -1452,15 +1452,17 @@ JSON object containing
  "type": "Stack",
  "data": {
    "entries": 123.0,
-   "type": "Average",
-   "data": [
+   "bins:type": "Average",
+   "bins": [
      {"atleast": "-inf", "data": {"entries": 123.0, "mean": 3.14}},
      {"atleast": 1.0, "data": {"entries": 100.0, "mean": 2.28}},
      {"atleast": 2.0, "data": {"entries": 82.0, "mean": 1.16}},
      {"atleast": 3.0, "data": {"entries": 37.0, "mean": 8.9}},
      {"atleast": 4.0, "data": {"entries": 4.0, "mean": 22.7}}],
    "nanflow:type": "Count",
-   "nanflow": 0.0}}
+   "nanflow": 0.0,
+   "name": "myfunc",
+   "bins:name": "myfunc2"}}
 ```
 
 ## **Select:** apply a cut
@@ -1478,7 +1480,7 @@ Note that the selection function can return any non-negative number. Fractional 
 ### Selecting constructor and required members
 
 ```python
-Select.ing(quantity, cut)
+Select.ing(quantity, cut=Count())
 ```
 
   * `quantity` (function returning boolean or double) computes the quantity of interest from the data and interprets it as a selection (multiplicative factor on weight).
@@ -1515,7 +1517,7 @@ def combine(one, two):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
+  * `sub:type` (JSON string), name of the sub-aggregator type
   * `data` (sub-aggregator)
   * optional `name` (JSON string), name of the `quantity` function, if provided.
 
@@ -1527,7 +1529,7 @@ JSON object containing
  "data": {
    "entries": 123.0,
    "name": "trigger",
-   "type": "Count",
+   "sub:type": "Count",
    "data": 98.0}}
 ```
 
@@ -1538,7 +1540,7 @@ JSON object containing
    "entries": 123.0,
    "name": "trigger",
    "sub:name": "energy [GeV]",
-   "type": "Bin",
+   "sub:type": "Bin",
    "data": {
      "low": -5.0,
      "high": 5.0,
@@ -1551,106 +1553,6 @@ JSON object containing
      "overflow": 8.0,
      "nanflow:type": "Count",
      "nanflow": 0.0}}}
-```
-
-## **Limit:** keep detail until entries is large
-
-Accumulate an aggregator until its number of entries reaches a predefined limit.
-
-Limit is intended to roll high-detail descriptions of small datasets over into low-detail descriptions of large datasets. For instance, a scatter plot is useful for small numbers of data points and heatmaps are useful for large ones. The following construction
-
-```python
-Bin(xbins, xlow, xhigh, lambda d: d.x,
-  Bin(ybins, ylow, yhigh, lambda d: d.y,
-    Limit(10.0, Bag(lambda d: [d.x, d.y]))))
-```
-
-fills a scatter plot in all x-y bins that have fewer than 10 entries and only a number of entries above that. Postprocessing code would use the bin-by-bin numbers of entries to color a heatmap and the raw data points to show outliers in the nearly empty bins.
-
-Limit can effectively swap between two descriptions if it is embedded in a collection, such as [Branch](#branch-tuple-of-different-types). All elements of the collection would be filled until the Limit saturates, leaving only the low-detail one. For instance, one could aggregate several [SparselyBin](#sparselybin-ignore-zeros) histograms, each with a different `binWidth`, and progressively eliminate them in order of increasing `binWidth`.
-
-Note that Limit saturates when it reaches a specified _total weight,_ not the number of data points in a [Bag](#bag-accumulate-values-for-scatter-plots), so it is not guaranteed to control memory use. (Imagine a dataset with many small weights.) However, the total weight is a more useful metric in data analysis.
-
-### Limiting constructor and required members
-
-```python
-Limit.ing(limit, value)
-```
-
-  * `limit` (double) is the maximum number of entries (inclusive) before deleting the `value`.
-  * `value` (present-tense aggregator) will only be filled until its number of entries exceeds the `limit`.
-  * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `contentType` (string) is the value's sub-aggregator type (must be provided to determine type for the case when `value` has been deleted).
-
-### Limited constructor and required members
-
-```python
-Limit.ed(entries, limit, contentType, value)
-```
-
-  * `entries` (double) is the number of entries.
-  * `limit` (double) is the maximum number of entries (inclusive).
-  * `contentType` (string) is the value's sub-aggregator type (must be provided to determine type for the case when `value` has been deleted).
-  * `value` (past-tense aggregator or `None`) is the filled sub-aggregator if unsaturated, `None` if saturated.
-
-### Fill and combine algorithms
-
-```python
-def fill(limiting, datum, weight):
-    if weight > 0.0:
-        if limiting.entries + weight > limiting.limit:
-            limiting.value = None
-        else:
-            fill(limiting.value, datum, weight)
-        limiting.entries += weight
-
-def combine(one, two):
-    if one.limit != two.limit or one.contentType != two.contentType:
-        raise Exception
-    entries = one.entries + two.entries
-    if entries > one.limit:
-        value = None
-    else:
-        value = combine(one.value, two.value)
-    return Limit.ed(entries, one.limit, one.contentType, value)
-```
-
-### JSON fragment format
-
-JSON object containing
-
-  * `entries` (JSON number or "inf")
-  * `limit` (JSON number)
-  * `type` (JSON string), name of the sub-aggregator type
-  * `data` (sub-aggregator or JSON null)
-
-**Examples:**
-
-```json
-{"version": "0.9",
- "type": "Limit",
- "data": {
-   "entries": 98.0,
-   "limit": 100.0,
-   "type": "Bag",
-   "data": {
-     "entries": 98.0,
-     "values": [
-       {"w": 2.0, "v": [1.0, 2.0, 3.0]},
-       {"w": 15.0, "v": [3.14, 3.14, 3.14]},
-       {"w": 18.0, "v": [99.0, 50.0, 1.0]},
-       {"w": 25.0, "v": [7.0, 2.2, 9.8]},
-       {"w": 30.0, "v": [33.3, 66.6, 99.9]}]}}}
-```
-
-```json
-{"version": "0.9",
- "type": "Limit",
- "data": {
-   "entries": 123.0,
-   "limit": 100.0,
-   "type": "Bag",
-   "data": null}}
 ```
 
 # Third kind: broadcast to every sub-aggregator, independent of data
@@ -1710,10 +1612,10 @@ def combine(one, two):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
+  * `sub:type` (JSON string), name of the sub-aggregator type
   * `data` (JSON object), keys are the labels and values are sub-aggregators
 
-The fact that Label requires all contents to have a single type allows the `type` to be specified once here, instead of once for every item in the collection. [UntypedLabel](#untypedlabel-directory-of-different-types) is more verbose.
+The fact that Label requires all contents to have a single type allows the `sub:type` to be specified once here, instead of once for every item in the collection. [UntypedLabel](#untypedlabel-directory-of-different-types) is more verbose.
 
 **Example:**
 
@@ -1722,7 +1624,7 @@ The fact that Label requires all contents to have a single type allows the `type
  "type": "Label",
  "data": {
    "entries": 123.0,
-   "type": "Average",
+   "sub:type": "Average",
    "data": {
      "one": {"entries": 123.0, "mean": 3.14},
      "two": {"entries": 123.0, "mean": 6.28},
@@ -1867,10 +1769,10 @@ def combine(one, two):
 JSON object containing
 
   * `entries` (JSON number or "inf")
-  * `type` (JSON string), name of the sub-aggregator type
+  * `sub:type` (JSON string), name of the sub-aggregator type
   * `data` (JSON array of aggregators)
 
-The fact that Index requires all contents to have a single type allows the `type` to be specified once here, instead of once for every item in the collection. [Branch](#branch-tuple-of-different-types) is more verbose.
+The fact that Index requires all contents to have a single type allows the `sub:type` to be specified once here, instead of once for every item in the collection. [Branch](#branch-tuple-of-different-types) is more verbose.
 
 **Example:**
 
@@ -1879,7 +1781,7 @@ The fact that Index requires all contents to have a single type allows the `type
  "type": "Index",
  "data": {
    "entries": 123.0,
-   "type": "Average",
+   "sub:type": "Average",
    "data": [
      {"entries": 123.0, "mean": 3.14},
      {"entries": 123.0, "mean": 6.28},
