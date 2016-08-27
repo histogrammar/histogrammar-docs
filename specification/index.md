@@ -557,6 +557,8 @@ A bag is the appropriate data type for scatter plots: a container that collects 
 
 Although the user-defined function may return scalar numbers, fixed-dimension vectors of numbers, or categorical strings, it may not mix range types. For the purposes of [Label](#label-directory-with-string-based-keys) and [Index](#index-list-with-integer-keys) (which can only collect aggregators of a single type), bags with different ranges are different types.
 
+**This primitive is likely to be eliminated or replaced by BagNumbers, BagStrings, BagVectors.**
+
 ### Bagging constructor and required members
 
 ```python
