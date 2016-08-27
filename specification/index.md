@@ -555,7 +555,9 @@ Accumulate raw numbers, vectors of numbers, or strings, with identical values me
 
 A bag is the appropriate data type for scatter plots: a container that collects raw values, maintaining multiplicity but not order. (A "bag" is also known as a "multiset.") Conceptually, it is a mapping from distinct raw values to the number of observations: when two instances of the same raw value are observed, one key is stored and their weights add.
 
-Although the user-defined function may return scalar numbers, fixed-dimension vectors of numbers, or categorical strings, it may not mix types. Different Bag primitives in an analysis tree may collect different types.
+Although the user-defined function may return scalar numbers, fixed-dimension vectors of numbers, or categorical strings, it may not mix range types. For the purposes of [Label](#label-directory-with-string-based-keys) and [Index](#index-list-with-integer-keys) (which can only collect aggregators of a single type), bags with different ranges are different types.
+
+**This primitive is likely to be eliminated or replaced by BagNumbers, BagStrings, BagVectors.**
 
 ### Bagging constructor and required members
 
@@ -1166,17 +1168,17 @@ Categorize.ing(quantity, value=Count.ing())
   * `quantity` (function returning double) computes the quantity of interest from the data.
   * `value` (present-tense aggregator) generates sub-aggregators to put in each bin.
   * `entries` (mutable double) is the number of entries, initially 0.0.
-  * `pairs` (mutable map from string to present-tense aggregator) is the map, probably a hashmap, to fill with values when their `entries` become non-zero.
+  * `bins` (mutable map from string to present-tense aggregator) is the map, probably a hashmap, to fill with values when their `entries` become non-zero.
 
 ### Categorized constructor and required members
 
 ```python
-Categorize.ed(entries, contentType, pairs)
+Categorize.ed(entries, contentType, bins)
 ```
 
   * `entries` (double) is the number of entries.
   * `contentType` (string) is the value's sub-aggregator type (must be provided to determine type for the case when `bins` is empty).
-  * `pairs` (map from string to past-tense aggregator) is the non-empty bin categories and their values.
+  * `bins` (map from string to past-tense aggregator) is the non-empty bin categories and their values.
 
 ### Fill and combine algorithms
 
@@ -1184,9 +1186,9 @@ Categorize.ed(entries, contentType, pairs)
 def fill(categorizing, datum, weight):
     if weight > 0.0:
         q = categorizing.quantity(datum)
-        if q not in categorizing.pairs:
-            categorizing.pairs[q] = categorizing.value.copy()
-        fill(categorizing.pairs[q], datum, weight)
+        if q not in categorizing.bins:
+            categorizing.bins[q] = categorizing.value.copy()
+        fill(categorizing.bins[q], datum, weight)
         categorizing.entries += weight
 
 def combine(one, two):
@@ -1194,15 +1196,15 @@ def combine(one, two):
         raise Exception
     entries = one.entries + two.entries
     contentType = one.contentType
-    pairs = {}
-    for key in set(one.pairs.keys()).union(set(two.pairs.keys())):
-        if key in one.pairs and key in two.pairs:
-            pairs[key] = combine(one.pairs[key], two.pairs[key])
-        elif key in one.pairs:
-            pairs[key] = one.pairs[key].copy()
-        elif key in two.pairs:
-            pairs[key] = two.pairs[key].copy()
-    return Categorize.ed(entries, contentType, pairs)
+    bins = {}
+    for key in set(one.bins.keys()).union(set(two.bins.keys())):
+        if key in one.bins and key in two.bins:
+            bins[key] = combine(one.bins[key], two.bins[key])
+        elif key in one.bins:
+            bins[key] = one.bins[key].copy()
+        elif key in two.bins:
+            bins[key] = two.bins[key].copy()
+    return Categorize.ed(entries, contentType, bins)
 ```
 
 ### JSON fragment format
