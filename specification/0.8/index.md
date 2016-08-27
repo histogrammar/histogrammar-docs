@@ -7,7 +7,7 @@ summary: |
     
     <p>This is the normative specification; any implementations that don't adhere to the definitions on this page should be corrected.</p>
 
-    <p>Previous versions: <a href="0.7">0.7</a></p>
+    <p>Previous versions: <a href="../0.7">0.7</a></p>
 ---
 
 # General features
