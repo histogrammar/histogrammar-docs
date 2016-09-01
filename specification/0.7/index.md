@@ -5,7 +5,9 @@ toc: true
 summary: |
     <p>This page describes Histogrammar in detail, but without reference to any particular implementation, including the composable primitives, their required functions and argument lists, and their JSON representations.</p>
     
-    <p>This is the normative specification; any implementations that don't adhere to the definitions on this page should be corrected.</p>
+    <p>This is an old specification; any implementations that claim to be compliant with Histogrammar 0.7 and don't adhere to the definitions on this page should be corrected.</p>
+
+    <p>Later versions: <a href="../0.8">0.8</a>, <a href="../1.0">1.0</a></p>
 ---
 
 # General features
