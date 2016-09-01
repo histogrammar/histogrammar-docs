@@ -8,9 +8,62 @@ summary: |
 
 # Install from a public repository
 
-## Scala
+## Java/Scala or Apache Spark
 
-When available, [Maven/sbt](http://search.maven.org/) instructions will be found here.
+Histogrammar is available on <a href="http://search.maven.org/#search|ga|1|histogrammar">Maven Central</a>, a publicly accessible Java/Scala repository with dependency management.
+
+### Apache Spark
+
+To use Histogrammar in the Spark shell, you don't have to download anything. Just start Spark with
+
+```bash
+spark-shell --packages "org.diana-hep:histogrammar_2.11:1.0.0"
+```
+
+and call
+
+```scala
+import org.dianahep.histogrammar._
+```
+
+on the Spark prompt. For plotting with Bokeh, include `org.diana-hep:histogrammar-bokeh_2.11:1.0.0` and for interaction with Spark-SQL, include `org.diana-hep:histogrammar-sparksql_2.11:1.0.0`.
+
+Use `_2.11` for compatibility with Spark 2.x (Scala 2.11) and `_2.10` for compatibility with Spark 1.x (Scala 2.10).
+
+### Java/Scala with Maven
+
+To compile Histogrammar into a project with the Maven build tool, add
+
+```xml
+<dependency>
+  <groupId>org.diana-hep</groupId>
+  <artifactId>histogrammar_2.11</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+
+to your `<dependencies>` section. Use `_2.11` for compatibility with Scala 2.11 and `_2.10` for compatibility with Scala 2.10.
+
+### Scala with sbt
+
+To use Histogrammar in `sbt console` or to compile it into a project with the sbt build tool, add
+
+```scala
+libraryDependencies += "org.diana-hep" %% "histogrammar" % "1.0.0"
+```
+
+to your `build.sbt` file. The double-percent gets the appropriate version of Histogrammar for your version of Scala.
+
+### Quick start
+
+In fact, the easiest way to start an interactive Scala session with histogrammar is simply to make the following `build.sbt`:
+
+```scala
+scalaVersion := "2.11.8"
+libraryDependencies += "org.diana-hep" %% "histogrammar" % "1.0.0"
+```
+
+and run `sbt console`. You don't need to install Scala or anything other than [sbt](http://www.scala-sbt.org/download.html).
 
 ## Python
 
