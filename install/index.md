@@ -24,7 +24,7 @@ Starting in version 0.8, each language implementation of Histogrammar has a sepa
 
 ## Java/Scala or Apache Spark
 
-Histogrammar is available on <a href="http://search.maven.org/#search|ga|1|histogrammar">Maven Central</a>, a publicly accessible Java/Scala repository with dependency management.
+<a href="http://search.maven.org/#search|ga|1|histogrammar">Histogrammar is available on Maven Central</a>, a publicly accessible Java/Scala repository with dependency management.
 
 ### Apache Spark
 
@@ -83,7 +83,7 @@ and run `sbt console`. You don't need to install Scala or anything other than [s
 
 ## Python
 
-Histogrammar is available on <a href="https://pypi.python.org/pypi/Histogrammar/">PyPI</a>, a publicly accessible Python repository with dependency management.
+<a href="https://pypi.python.org/pypi/Histogrammar/">Histogrammar is available on PyPI</a>, a publicly accessible Python repository with dependency management.
 
 ### If you have superuser (root) access
 

@@ -1,5 +1,5 @@
 ---
-title: Specification 0.9-prerelease
+title: Specification 1.0
 type: default
 toc: true
 summary: |
