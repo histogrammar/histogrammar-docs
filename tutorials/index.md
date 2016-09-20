@@ -4,6 +4,19 @@ type: homepage
 toc: false
 ---
 
+## Gists
+
+Informal repository of usable snippets. Updates more frequently than tutorials.
+
+<form action="http://gist.github.com/search">
+<div style="margin-left: 150px; margin-right: 150px; min-width: 300px;">
+<div style="display: flex;">
+<div style="width: 100px; margin-right: 5px;"><input type="submit" value="Search for" style="width: 100%"></div>
+<div style="flex-grow: 1;"><input type="text" name="q" value="histogrammar " style="width: 100%"></div>
+</div>
+</div>
+</form>
+
 ## Basics
 
 ### Scala
@@ -12,7 +25,7 @@ toc: false
 
 ### Python
 
-  * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar with Matplotlib, the most popular Python plotting library, and no custom back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
+  * {% include progress.html complete=50 %} [Basic use in Python](python-basic): Histogrammar with Matplotlib, the most popular Python plotting library, and no custom back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
 
 ## Plotting front-ends
 
