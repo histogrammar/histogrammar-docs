@@ -4,6 +4,8 @@ type: default
 toc: true
 summary: |
     <p>This page explains how to install Histogrammar in different ways. Use only the instructions relevant to your situation.</p>
+scalaversion: 1.0.2
+pythonversion: 1.0.2
 ---
 
 # Get a specific release or the latest from GitHub
@@ -15,7 +17,7 @@ Starting in version 0.8, each language implementation of Histogrammar has a sepa
 | Specification | Scala | Python | C++ | Julia | R | Javascript |
 |:-------------:|:-----:|:------:|:---:|:-----:|:-:|:----------:|
 | [1.1-prerelease](../specification/1.1) | [repo](https://github.com/histogrammar/histogrammar-scala), [clone](https://github.com/histogrammar/histogrammar-scala.git), [zip](https://github.com/histogrammar/histogrammar-scala/archive/master.zip) ([README](http://github.com/histogrammar/histogrammar-scala/blob/master/README.md)) | [repo](https://github.com/histogrammar/histogrammar-python), [clone](https://github.com/histogrammar/histogrammar-python.git), [zip](https://github.com/histogrammar/histogrammar-python/archive/master.zip) ([README](http://github.com/histogrammar/histogrammar-python/blob/master/README.md)) | [repo](https://github.com/histogrammar/histogrammar-cpp), [clone](https://github.com/histogrammar/histogrammar-cpp.git), [zip](https://github.com/histogrammar/histogrammar-cpp/archive/master.zip) ([README](http://github.com/histogrammar/histogrammar-cpp/blob/master/README.md)) | [repo](https://github.com/histogrammar/Histogrammar.jl), [clone](https://github.com/histogrammar/Histogrammar.jl.git), [zip](https://github.com/histogrammar/Histogrammar.jl/archive/master.zip) ([README](http://github.com/histogrammar/Histogrammar.jl/blob/master/README.md)) | | |
-| [1.0](../specification/1.0) | [1.0.1](https://github.com/histogrammar/histogrammar-scala/releases/tag/1.0.1) ([README](http://github.com/histogrammar/histogrammar-scala/blob/1.0.x/README.md), [reference](http://histogrammar.org/scala/1.0.1/#org.dianahep.histogrammar.package)) | [1.0.2](https://github.com/histogrammar/histogrammar-python/releases/tag/1.0.2) ([README](http://github.com/histogrammar/histogrammar-python/blob/1.0.x/README.md), [reference](http://histogrammar.org/python/1.0.2/)) | [1.0.0](https://github.com/histogrammar/histogrammar-cpp/releases/tag/1.0.0) ([README](http://github.com/histogrammar/histogrammar-cpp/blob/1.0.x/README.md)) | [1.0.0](https://github.com/histogrammar/Histogrammar.jl/releases/tag/1.0.0) ([README](http://github.com/histogrammar/Histogrammar.jl/blob/1.0.x/README.md)) | | |
+| [1.0](../specification/1.0) | [{{ page.scalaversion }}](https://github.com/histogrammar/histogrammar-scala/releases/tag/{{ page.scalaversion }}) ([README](http://github.com/histogrammar/histogrammar-scala/blob/1.0.x/README.md), [reference](http://histogrammar.org/scala/{{ page.scalaversion }}/#org.dianahep.histogrammar.package)) | [{{ page.pythonversion }}](https://github.com/histogrammar/histogrammar-python/releases/tag/{{ page.pythonversion }}) ([README](http://github.com/histogrammar/histogrammar-python/blob/1.0.x/README.md), [reference](http://histogrammar.org/python/{{ page.pythonversion }}/)) | [1.0.0](https://github.com/histogrammar/histogrammar-cpp/releases/tag/1.0.0) ([README](http://github.com/histogrammar/histogrammar-cpp/blob/1.0.x/README.md)) | [1.0.0](https://github.com/histogrammar/Histogrammar.jl/releases/tag/1.0.0) ([README](http://github.com/histogrammar/Histogrammar.jl/blob/1.0.x/README.md)) | | |
 | [0.8](../specification/0.8) | [0.8.0](https://github.com/histogrammar/histogrammar-scala/releases/tag/0.8.0) ([README](http://github.com/histogrammar/histogrammar-scala/blob/0.8.x/README.md), [reference](http://histogrammar.org/scala/0.8.0/#org.dianahep.histogrammar.package)) | [0.8.0](https://github.com/histogrammar/histogrammar-python/releases/tag/0.8.0) ([README](http://github.com/histogrammar/histogrammar-python/blob/0.8.x/README.md), [reference](http://histogrammar.org/python/0.8.0/)) | [0.8.0](https://github.com/histogrammar/histogrammar-cpp/releases/tag/0.8.0) ([README](http://github.com/histogrammar/histogrammar-cpp/blob/0.8.x/README.md)) | [0.8.0](https://github.com/histogrammar/Histogrammar.jl/releases/tag/0.8.0) ([README](http://github.com/histogrammar/Histogrammar.jl/blob/0.8.x/README.md)) | | |
 | [0.7](../specification/0.7) | [0.7.1](https://github.com/histogrammar/histogrammar-multilang/releases/tag/0.7.1) ([reference](http://histogrammar.org/scala/0.7.1/#org.dianahep.histogrammar.package)) | [0.7.1](https://github.com/histogrammar/histogrammar-multilang/releases/tag/0.7.1) ([reference](http://histogrammar.org/python/0.7.1/)) | [0.7.1](https://github.com/histogrammar/histogrammar-multilang/releases/tag/0.7.1) | | | |
 | 0.6 | [0.6](https://github.com/histogrammar/histogrammar-multilang/releases/tag/0.6) ([reference](http://histogrammar.org/scala/0.6/#org.dianahep.histogrammar.package)) | [0.6](https://github.com/histogrammar/histogrammar-multilang/releases/tag/0.6) | [0.6](https://github.com/histogrammar/histogrammar-multilang/releases/tag/0.6) | | | |
@@ -31,7 +33,7 @@ Starting in version 0.8, each language implementation of Histogrammar has a sepa
 To use Histogrammar in the Spark shell, you don't have to download anything. Just start Spark with
 
 ```bash
-spark-shell --packages "org.diana-hep:histogrammar_2.11:1.0.1"
+spark-shell --packages "org.diana-hep:histogrammar_2.11:{{ page.scalaversion }}"
 ```
 
 and call
@@ -40,7 +42,7 @@ and call
 import org.dianahep.histogrammar._
 ```
 
-on the Spark prompt. For plotting with Bokeh, include `org.diana-hep:histogrammar-bokeh_2.11:1.0.1` and for interaction with Spark-SQL, include `org.diana-hep:histogrammar-sparksql_2.11:1.0.1`.
+on the Spark prompt. For plotting with Bokeh, include `org.diana-hep:histogrammar-bokeh_2.11:{{ page.scalaversion }}` and for interaction with Spark-SQL, include `org.diana-hep:histogrammar-sparksql_2.11:{{ page.scalaversion }}`.
 
 Use `_2.11` for compatibility with Spark 2.x (Scala 2.11) and `_2.10` for compatibility with Spark 1.x (Scala 2.10).
 
@@ -54,7 +56,7 @@ To compile Histogrammar into a project with the Maven build tool, add
 <dependency>
   <groupId>org.diana-hep</groupId>
   <artifactId>histogrammar_2.11</artifactId>
-  <version>1.0.1</version>
+  <version>{{ page.scalaversion }}</version>
 </dependency>
 ```
 
@@ -65,7 +67,7 @@ to your `<dependencies>` section. Use `_2.11` for compatibility with Scala 2.11 
 To use Histogrammar in `sbt console` or to compile it into a project with the sbt build tool, add
 
 ```scala
-libraryDependencies += "org.diana-hep" %% "histogrammar" % "1.0.1"
+libraryDependencies += "org.diana-hep" %% "histogrammar" % "{{ page.scalaversion }}"
 ```
 
 to your `build.sbt` file. The double-percent gets the appropriate version of Histogrammar for your version of Scala.
@@ -75,8 +77,8 @@ to your `build.sbt` file. The double-percent gets the appropriate version of His
 In fact, the easiest way to start an interactive Scala session with histogrammar is simply to make the following `build.sbt`:
 
 ```scala
-scalaVersion := "2.11.8"
-libraryDependencies += "org.diana-hep" %% "histogrammar" % "1.0.1"
+page.scalaversion := "2.11.8"
+libraryDependencies += "org.diana-hep" %% "histogrammar" % "{{ page.scalaversion }}"
 ```
 
 and run `sbt console`. You don't need to install Scala or anything other than [sbt](http://www.scala-sbt.org/download.html).
