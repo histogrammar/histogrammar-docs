@@ -13,7 +13,18 @@ Most of the examples must use _some_ dataset, so I prepared a sample of CMS publ
 
 For convenience, it has been converted to compressed JSON. The code that reads it into classes is provided below for you to copy-paste, rather than a JAR to load, because I want you to see how it's done and you may want to modify it.
 
-## Loading the data
+## Loading the data quickly
+
+The data-loading code is now included in the core Histogrammar library (as of 1.0.3), so you just do this:
+
+```scala
+import org.dianahep.histogrammar.tutorial.cmsdata
+val events = cmsdata.EventIterator()
+```
+
+For older versions of Histogrammar or to see what this is doing, read below.
+
+## Pedestrian approach
 
 Start a Scala prompt with the Histogrammar JAR loaded. That is, do
 

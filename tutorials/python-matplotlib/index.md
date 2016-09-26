@@ -10,7 +10,14 @@ summary: |
 ## Preliminaries
 
 This tutorial demonstrates the use of the Python version of Histogrammar.  See
-the [installation guide](../../install) for installing version 0.7 or later.  
+the [installation guide](../../install) for installing version 1.0.4 or later.  
+
+It also uses the [CMS public dataset](../python-cmsdata). Use the following to create an iterator over the data (and refresh it if you use up all the events). You will need a network connection.
+
+```python
+from histogrammar.tutorial import cmsdata
+events = cmsdata.EventIterator()
+```
 
 ## Introduction
 
@@ -230,12 +237,12 @@ print json.dump(h.toJson())
 
 ## Realistic Examples
 
-The next series of examples follows the PyROOT tutorial and shows of some of
+The next series of examples follows the other tutorials and shows of some of
 the more advanced histogrammar aggregations and quick matplotlib plotting
 methods.  First let's load in the CMS data used in the other examples:
 
 ```python
-events = EventIterator()
+events = cmsdata.EventIterator()
 ```
 
 The following series of examples is meant to highlight histogrammars

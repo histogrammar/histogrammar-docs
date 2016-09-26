@@ -9,22 +9,21 @@ summary: |
 
 ## Setting up
 
-The examples on this page have been tested with Histogrammar 0.7. Any subsequent version should work. See the [Installation instructions](../install) if you need to install it.
+The examples on this page have been tested with Histogrammar 1.0.3. Any subsequent version should work. See the [Installation instructions](../install) if you need to install it.
 
-It also uses Apache Spark, so you'll want to start a Spark Shell with the following JARs loaded:
+It also uses Apache Spark. You might already have access to a Spark cluster (and that's why you're here, after all), but if you don't, you can install it yourself [from Spark's website](http://spark.apache.org/downloads.html). Spark can run on a single computer for testing, though its performance advantage comes from parallelizing across a network. The interface on a single computer is identical to the distributed version. For a single-computer installation, choose "pre-built for Hadoop 1.X" (you don't need Hadoop to be installed, only Java).
 
-  * histogrammar-0.7.jar
-  * histogrammar-bokeh-0.7.jar
-  * Bokeh and all of its dependencies.
-
-If you have compiled from source and are in the `histogrammar/scala-bokeh` directory, a convenient way to get a `--jars` argument for Spark is with the following:
+If your Spark cluster is version 2.0 or later, start it with
 
 ```bash
-spark-shell --jars=`ls target/**/*.jar | tr '\n' ','`
+spark-shell --packages "org.diana-hep:histogrammar-bokeh_2.11:1.0.3"
 ```
 
-(lists all JARs, concatenates them with commas, and passes to Spark). Use whatever other options are necessary for your Spark installation, such as a custom `--master`.
+Otherwise, start it with
 
+```bash
+spark-shell --packages "org.diana-hep:histogrammar-bokeh_2.10:1.0.3"
+```
 
 ## Plotting a Histogram in `Scala`
 
@@ -116,13 +115,15 @@ save(plot_stack,"scala_plot_stack.html")
 
 ## Plotting a Histogram in `spark-shell`
 
-This tutorial also uses the [CMS public dataset](scala-cmsdata) as sample data. Load the code on that page to get an `events` iterator, then do:
+The next examples use the [CMS public dataset](scala-cmsdata) as sample data. Load that into a Spark RDD with
 
 ```scala
+import org.dianahep.histogrammar.tutorial.cmsdata
+val events = cmsdata.EventIterator()
 val dataset_rdd = sc.parallelize(events.toSeq)
 ```
 
-to turn it into a Spark RDD. It may take about 20 seconds to transfer all the data to your Spark cluster.
+It may take about 20-30 seconds to transfer all the data to your Spark cluster.
 
 Following is an example of plotting a simple histogram with `scala-bokeh` in the interactive spark-shell (Spark context and SQL context are available as `sc` and `sqlContext`). Following assumes that `Bokeh` and `histogrammar` jars are included in the classpath:	
 

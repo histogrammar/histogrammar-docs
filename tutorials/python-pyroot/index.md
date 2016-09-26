@@ -9,12 +9,13 @@ summary: |
 
 ## Preliminaries
 
-This tutorial uses the Python version of Histogrammar. See the [installation guide](../../install) for installing version 0.7 or later.
+This tutorial uses the Python version of Histogrammar. See the [installation guide](../../install) for installing version 1.0.4 or later.
 
-It also uses the [CMS public dataset](../python-cmsdata). Set up an iterator named `events` in your console. You will need a network connection. If your `events` iterator ever runs out, refresh it with
+It also uses the [CMS public dataset](../python-cmsdata). Use the following to create an iterator over the data (and refresh it if you use up all the events). You will need a network connection.
 
 ```python
-events = EventIterator()
+from histogrammar.tutorial import cmsdata
+events = cmsdata.EventIterator()
 ```
 
 ## First histogram
@@ -181,7 +182,7 @@ If we bin it, we approximate a two-dimensional distribution as a function.
 pt_vs_vertices = Bin(20, 0.5, 20.5, lambda event: event.numPrimaryVertices,
                      Average(lambda event: event.met.pt))
 
-events = EventIterator()
+events = cmsdata.EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     pt_vs_vertices.fill(event)
@@ -216,7 +217,7 @@ All we have to do to get error bars is to swap `Average` for `Deviate`.
 pt_vs_vertices = Bin(20, 0.5, 20.5, lambda event: event.numPrimaryVertices,
                      Deviate(lambda event: event.met.pt))
 
-events = EventIterator()
+events = cmsdata.EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     pt_vs_vertices.fill(event)
@@ -253,7 +254,7 @@ If we replace the "dense vector" of a standard histogram with a "sparse vector,"
 ```python
 histogram = SparselyBin(1.0, lambda event: event.met.pt)
 
-events = EventIterator()
+events = cmsdata.EventIterator()
 for i, event in enumerate(events):
     if i == 1000: break
     histogram.fill(event)
@@ -305,7 +306,7 @@ That said, `SparselyBin` can be composed with any sub-aggregators to make sparse
 pt_vs_vertices = SparselyBin(1.0, lambda event: event.numPrimaryVertices,
                              Deviate(lambda event: event.met.pt))
 
-events = EventIterator()
+events = cmsdata.EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     pt_vs_vertices.fill(event)
@@ -324,7 +325,7 @@ sparse two-dimensional histograms:
 hist2d = SparselyBin(5.0, lambda event: event.met.px,
                      SparselyBin(5.0, lambda event: event.met.py))
 
-events = EventIterator()
+events = cmsdata.EventIterator()
 for i, event in enumerate(events):
     if i == 1000: break
     hist2d.fill(event)
@@ -357,7 +358,7 @@ One of the most common is an efficiency plot: the probability of passing a cut a
 frac = Fraction(lambda event: event.numPrimaryVertices > 5,
                 Bin(30, 0, 100, lambda event: event.met.pt))
 
-events = EventIterator()
+events = cmsdata.EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     frac.fill(event)
@@ -427,13 +428,13 @@ Suppose that we have two collections: muons and jets. (In a typical physics anal
 
 ```python
 muons = []
-for i, event in enumerate(EventIterator()):
+for i, event in enumerate(cmsdata.EventIterator()):
     if i == 1000: break
     for muon in event.muons:
         muons.append(muon)
 
 jets = []
-for i, event in enumerate(EventIterator()):
+for i, event in enumerate(cmsdata.EventIterator()):
     if i == 1000: break
     for jet in event.jets:
         jets.append(jet)
@@ -519,7 +520,7 @@ stack = Stack([0.8, 1.2, 1.7], lambda muon: abs(muon.eta),
 partition = IrregularlyBin([0.8, 1.2, 1.7], lambda muon: abs(muon.eta),
                            Bin(50, 0, 200, lambda muon: muon.p))
 
-events = EventIterator()
+events = cmsdata.EventIterator()
 for i, event in enumerate(events):
     if i == 10000: break
     for muon in event.muons:

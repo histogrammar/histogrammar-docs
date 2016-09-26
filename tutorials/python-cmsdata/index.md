@@ -13,7 +13,18 @@ Most of the examples must use _some_ dataset, so I prepared a sample of CMS publ
 
 For convenience, it has been converted to compressed JSON. The code that reads it into classes is provided below for you to copy-paste.
 
-## Loading the data
+## Loading the data quickly
+
+The data-loading code is now included in the core Histogrammar library (as of 1.0.4), so you just do this:
+
+```python
+from histogrammar.tutorial import cmsdata
+events = cmsdata.EventIterator()
+```
+
+For older versions of Histogrammar or to see what this is doing, read below.
+
+## Pedestrian approach
 
 Start a Python prompt and _either_
 
