@@ -4,8 +4,8 @@ type: default
 toc: true
 summary: |
     <p>This page explains how to install Histogrammar in different ways. Use only the instructions relevant to your situation.</p>
-scalaversion: 1.0.2
-pythonversion: 1.0.3
+scalaversion: 1.0.3
+pythonversion: 1.0.4
 ---
 
 # Get a specific release or the latest from GitHub
