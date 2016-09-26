@@ -33,7 +33,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     histogram.fill(event)
 
-roothist = histogram.root("name", "title")
+roothist = histogram.plot.root("name", "title")
 roothist.Draw()
 ```
 
@@ -64,7 +64,7 @@ In Histogrammar, the rule for how to fill the histogram is provided in the const
 Finally, the last line
 
 ```python
-roothist = histogram.root("name", "title")
+roothist = histogram.plot.root("name", "title")
 ```
 
 creates a ROOT object from the Histogrammar object. In this case, it is a `ROOT.TH1D`, but the exact choice depends on what kind of Histogrammar object you're converting.
@@ -106,7 +106,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     hist2d.fill(event)
 
-roothist = hist2d.root("name2", "title")
+roothist = hist2d.plot.root("name2", "title")
 roothist.Draw("colz")
 ```
 
@@ -126,7 +126,7 @@ for i, event in enumerate(events):
     for muon in event.muons:
         hist3d.fill(muon)
 
-roothist = hist3d.root("name3", "title")
+roothist = hist3d.plot.root("name3", "title")
 ```
 
 In Histogrammar version 0.7, at least, this raises
@@ -145,7 +145,7 @@ Nevertheless, the aggregated data is available inside `hist3d`. Explore it with 
 import ROOT
 for i, x in enumerate(hist3d.values):
     low, high = hist3d.range(i)
-    roothist = x.root("slice {}".format(i), "{} <= px < {}".format(low, high))
+    roothist = x.plot.root("slice {}".format(i), "{} <= px < {}".format(low, high))
     roothist.Draw("colz")
     ROOT.gPad.SaveAs("slice_{}.png".format(i))
 
@@ -187,7 +187,7 @@ for i, event in enumerate(events):
     if i == 10000: break
     pt_vs_vertices.fill(event)
 
-roothist = pt_vs_vertices.root("name4")
+roothist = pt_vs_vertices.plot.root("name4")
 roothist.GetXaxis().SetTitle("number of primary vertices")
 roothist.GetYaxis().SetTitle("average MET pT")
 roothist.Draw()
@@ -222,7 +222,7 @@ for i, event in enumerate(events):
     if i == 10000: break
     pt_vs_vertices.fill(event)
 
-roothist = pt_vs_vertices.root("name5")
+roothist = pt_vs_vertices.plot.root("name5")
 roothist.GetXaxis().SetTitle("number of primary vertices")
 roothist.GetYaxis().SetTitle("average MET pT")
 roothist.Draw()
@@ -233,7 +233,7 @@ roothist.Draw()
 It may be useful to know that every primitive has an `entries` (number of entries) field, and `Count` is nothing but a number of entries. Therefore, anything based on `Bin` can be turned into a simple histogram _without re-filling_.
 
 ```python
-roothist2 = pt_vs_vertices.histogram().root("name6")
+roothist2 = pt_vs_vertices.histogram().plot.root("name6")
 roothist2.Draw()
 ```
 
@@ -259,7 +259,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     histogram.fill(event)
 
-roothist = histogram.root("name7", "title")
+roothist = histogram.plot.root("name7", "title")
 roothist.Draw()
 ```
 
@@ -311,7 +311,7 @@ for i, event in enumerate(events):
     if i == 10000: break
     pt_vs_vertices.fill(event)
 
-roothist = pt_vs_vertices.root("name8")
+roothist = pt_vs_vertices.plot.root("name8")
 roothist.GetXaxis().SetTitle("number of primary vertices")
 roothist.GetYaxis().SetTitle("average MET pT")
 roothist.Draw()
@@ -330,7 +330,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     hist2d.fill(event)
 
-roothist = hist2d.root("name9", "title")
+roothist = hist2d.plot.root("name9", "title")
 roothist.Draw("colz")
 ```
 
@@ -363,14 +363,14 @@ for i, event in enumerate(events):
     if i == 10000: break
     frac.fill(event)
 
-roothist = frac.root("name10", "title")
+roothist = frac.plot.root("name10", "title")
 roothist.SetTitle(";MET pT;fraction with number of primary vertices > 5")
 roothist.Draw()
 ```
 
 ![Efficiency plot](frac.png)
 
-Note that the ROOT object returned by `frac.root` is a `ROOT.TEfficiency`. This lets you choose different statistics for the error bars, which is not Histogrammar's job, but ROOT's.
+Note that the ROOT object returned by `frac.plot.root` is a `ROOT.TEfficiency`. This lets you choose different statistics for the error bars, which is not Histogrammar's job, but ROOT's.
 
 There's nothing stopping you from making an efficiency plot from a sparsely binned histogram. Histogrammar ensures that the numerator and denominator have the same binning.
 
@@ -382,7 +382,7 @@ for i, event in enumerate(events):
     if i == 10000: break
     frac.fill(event)
 
-roothist = frac.root("name11", "title")
+roothist = frac.plot.root("name11", "title")
 roothist.SetTitle(";MET pT;fraction with number of primary vertices > 5")
 roothist.Draw()
 ```
@@ -411,7 +411,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     stack.fill(event)
 
-roothist = stack.root("name12", "name13", "name14", "name15", "name16")
+roothist = stack.plot.root("name12", "name13", "name14", "name15", "name16")
 for i, h in enumerate(roothist.values()):
     h.SetFillColor(i + 2)
 
@@ -420,7 +420,7 @@ roothist.Draw()
 
 ![Stacked histograms](stack.png)
 
-The `stack.root` call has to give names to each of the histograms (consider using Python's `*args` syntax if you want to dynamically generates a list `args`) and it returns a Python `OrderedDict` of `ROOT.TH1D`. They keys of this dictionary are the cut thresholds and you can iterate over the values (as above) to give them styles.
+The `stack.plot.root` call has to give names to each of the histograms (consider using Python's `*args` syntax if you want to dynamically generates a list `args`) and it returns a Python `OrderedDict` of `ROOT.TH1D`. They keys of this dictionary are the cut thresholds and you can iterate over the values (as above) to give them styles.
 
 The most common use of stacked histograms in high energy physics doesn't fit the case above: usually, a stack shows data drawn from different sources. This illustrates a limitation in Histogrammar's scope: all aggregators, no matter how complex with nested primitives, are filled with data from _one_ data source. The lambda functions in almost all of the examples above took `event` as their argument. If you want to collect data from multiple sources, you'll have to do multiple aggregation "runs."
 
@@ -459,7 +459,7 @@ The `Stack` primitive has a special constructor for taking histograms from diffe
 ```python
 stack = Stack.build(muonsPlot, jetsPlot)
 
-roothist = stack.root("name17", "name18")
+roothist = stack.plot.root("name17", "name18")
 for i, h in enumerate(roothist.values()):
     h.SetFillColor(i + 2)
 
@@ -473,7 +473,7 @@ The beauty of this is that you don't have to aggregate them again to stack them 
 ```python
 stack = Stack.build(jetsPlot, muonsPlot)
 
-roothist = stack.root("name19", "name20")
+roothist = stack.plot.root("name19", "name20")
 for i, h in enumerate(reversed(roothist.values())):
     h.SetFillColor(i + 2)
 
@@ -527,7 +527,7 @@ for i, event in enumerate(events):
         stack.fill(muon)
         partition.fill(muon)
 
-rootstack = stack.root("barrel", "overlap", "endcap-2", "endcap-1")
+rootstack = stack.plot.root("barrel", "overlap", "endcap-2", "endcap-1")
 for i, h in enumerate(rootstack.values()):
     h.SetFillColor(i + 2)
 
@@ -537,7 +537,7 @@ rootstack.Draw()
 ![Stacked muon momentum plots](muons_stacked.png)
 
 ```python
-rootpartition = partition.root("barrel", "overlap", "endcap-2", "endcap-1")
+rootpartition = partition.plot.root("barrel", "overlap", "endcap-2", "endcap-1")
 for i, h in enumerate(rootpartition.values()):
     h.SetLineColor(i + 2)
     h.SetLineWidth(2)
@@ -593,7 +593,7 @@ for i, event in enumerate(events):
     if i == 1000: break
     histogram.fill(event)
 
-roothist = histogram.root("name22", "title")
+roothist = histogram.plot.root("name22", "title")
 roothist.Draw()
 ```
 
@@ -654,10 +654,10 @@ To pull one of the histograms out of the `UntypedLabel` and plot it, use `get`.
 ```python
 import ROOT
 
-rootpt = muonAnalysis.get("pt").root("muon pt")
-rootp = muonAnalysis.get("p").root("muon p")
-rooteta = muonAnalysis.get("eta").root("muon eta")
-rootphi = muonAnalysis.get("phi").root("muon phi")
+rootpt = muonAnalysis.get("pt").plot.root("muon pt")
+rootp = muonAnalysis.get("p").plot.root("muon p")
+rooteta = muonAnalysis.get("eta").plot.root("muon eta")
+rootphi = muonAnalysis.get("phi").plot.root("muon phi")
 
 canvas = ROOT.TCanvas()
 canvas.Clear()
@@ -760,7 +760,7 @@ There is a hidden advantage in this code. The fact that the function is named al
 
 ```python
 
-roothist = histogram.root("name23")
+roothist = histogram.plot.root("name23")
 roothist.GetXaxis().SetTitle(histogram.quantity.name)
 roothist.Draw()
 ```
@@ -929,7 +929,7 @@ Similarly, we can create a tree of aggregators from JSON:
 ```python
 bundle2 = Factory.fromJson(json.loads(serialized))
 
-roothist = bundle2.get("MET").get("px").root("name24")
+roothist = bundle2.get("MET").get("px").plot.root("name24")
 roothist.Draw()
 ```
 

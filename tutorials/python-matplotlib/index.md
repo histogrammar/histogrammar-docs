@@ -57,13 +57,13 @@ for d in data:
     histogram.fill(d)
 
 # quick plotting convenience method using matplotlib (if the user has this installed)
-ax = histogram.matplotlib(name="hello world!")
+ax = histogram.plot.matplotlib(name="hello world!")
 
 # to improve plot styling, try adding **kwargs suitable for plt.bar
-#  e.g.: ax = histogram.matplotlib(name="hello world!", color="slategrey", edgecolor="white")
+#  e.g.: ax = histogram.plot.matplotlib(name="hello world!", color="slategrey", edgecolor="white")
 ```
 If the plot doesn't show up in your IPython terminal, you may need to turn
-interactive mode on, `plt.ion()`, or call `plt.show()`.
+interactive mode on, `plt.ion()`, or call `plt.show()` (after `import matplotlib.pyplot as plt`).
 
 The first three arguments to `hg.Bin` are pretty self explanitory.  `num` is
 the number of equal width bins to use.  The `low` and `high` parameters are the
@@ -159,7 +159,7 @@ h = hg.Bin(20, 0, 1, lambda x: x[1], hg.Deviate(lambda x: x[0]))
 for d in data:
     h.fill(d)
 
-ax = h.matplotlib("profile plot", aspect=False, lw=2, color="slateblue")
+ax = h.plot.matplotlib("profile plot", aspect=False, lw=2, color="slateblue")
 ax.set_ylabel("$\\mathrm{x}[1] \\pm 1\\sigma$")
 ax.set_xlabel("$\\mathrm{x}[0]$")
 ```
@@ -210,7 +210,7 @@ data.aggregate(histogram)(hg.increment, hg.combine)
 ```
 
 `increment` is similar to `fill`, and `hg.combine` merges two aggregations into
-one.  Notice what `(h + h).matplotlib()` does.
+one.  Notice what `(h + h).plot.matplotlib()` does.
 
 Other pages in the documentation provide more detail on using histogrammar in
 different computing environments.
@@ -259,7 +259,7 @@ for i, event in enumerate(events):
     if i == 5000: break
     hist2d.fill(event)
 
-ax = hist2d.matplotlib(name="2 dimensional histogram")
+ax = hist2d.plot.matplotlib(name="2 dimensional histogram")
 ax.set_ylabel("met py")
 ax.set_xlabel("met px")
 ```
