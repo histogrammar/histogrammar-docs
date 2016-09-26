@@ -1,7 +1,10 @@
 ---
-title: Basic use in Python
+title: Making Matplotlib plots
 type: default
 toc: false
+summary: |
+    <p>If you're working with Histogrammar in Python and want to use <a href="http://matplotlib.org/">Matplotlib</a> to draw plots, read this page.</p>
+    <p><b>Author:</b> <a href="https://github.com/bwengals">Bill Engels</a></p>
 ---
 
 ## Preliminaries
@@ -255,11 +258,3 @@ ax.set_xlabel("met px")
 ```
 
 ![Two-dimensional histogram](hist2d.png)
-
-
-
-
-
-
-
-

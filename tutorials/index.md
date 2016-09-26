@@ -25,7 +25,7 @@ Informal repository of usable snippets. Updates more frequently than tutorials.
 
 ### Python
 
-  * {% include progress.html complete=50 %} [Basic use in Python](python-basic): Histogrammar with Matplotlib, the most popular Python plotting library, and no custom back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
+  * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
 
 ## Plotting front-ends
 
@@ -35,7 +35,8 @@ Informal repository of usable snippets. Updates more frequently than tutorials.
 
 ### Python
 
-  * {% include progress.html complete=100 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the ROOT analysis package in Python. This tutorial is complete enough that you could start here.
+  * {% include progress.html complete=50 %} [Making Matplotlib plots](python-matplotlib): How to send Histogrammar data to Matplotlib, the most popular Python plotting library.
+  * {% include progress.html complete=100 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the ROOT analysis package in Python. This tutorial is complete enough that you could start here, if you are a ROOT user.
   * {% include progress.html complete=0 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the Bokeh plotting package in Python.
 
 ## Aggregation back-ends
@@ -49,6 +50,8 @@ Informal repository of usable snippets. Updates more frequently than tutorials.
 ### Python
 
   * {% include progress.html complete=100 %} [Enhancements for Numpy](python-numpy): Aggregating over data in Numpy arrays without a Python for loop (i.e. faster).
+  * {% include progress.html complete=0 %} [Enhancements for ROOT](python-pyroot): Aggregating over data in ROOT TTrees, taking advantage of JIT-compilation for 100X speed-ups.
+  * {% include progress.html complete=0 %} [GPU backend](python-gpu): Generating CUDA code to include in your GPU applications or filling data directly from Numpy arrays using PyCUDA.
 
 ## Utility applications
 
