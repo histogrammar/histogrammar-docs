@@ -4,8 +4,8 @@ type: default
 toc: true
 summary: |
     <p>This page explains how to install Histogrammar in different ways. Use only the instructions relevant to your situation.</p>
-scalaversion: 1.0.2
-pythonversion: 1.0.2
+scalaversion: 1.0.4
+pythonversion: 1.0.5
 ---
 
 # Get a specific release or the latest from GitHub
@@ -117,6 +117,32 @@ pip install --user histogrammar
 ```
 
 which installs it in `~/.local` (Python knows where to find it).
+
+### For use in PySpark
+
+PySpark uses both Histogrammar-Python (as an interface) and Histogrammar-Scala (for faster calculations). To use it, you need to download Histogrammar-Python as described immediately above, and launch PySpark with a request for Histogrammar-Scala:
+
+```bash
+pyspark --packages "org.diana-hep:histogrammar_2.11:{{ page.scalaversion }}"
+```
+
+Use `_2.11` for compatibility with Spark 2.x (Scala 2.11) and `_2.10` for compatibility with Spark 1.x (Scala 2.10).
+
+In PySpark, you should be able to call
+
+```python
+from histogrammar import *
+import histogrammar.sparksql
+histogrammar.sparksql.addMethods(df)
+```
+
+where `df` is a `DataFrame` that you would like to enable with Histogrammar. You can now call
+
+```python
+h = df.Bin(100, -5.0, 5.0, df["plotme"] + df["andme"])
+```
+
+to get a histogram `h` of Column expression `df["plotme"] + df["andme"]`. All of the processing is performed in Java with Spark's DataFrame optimizations.
 
 ## C++
 

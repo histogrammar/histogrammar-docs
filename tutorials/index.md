@@ -25,7 +25,7 @@ Informal repository of usable snippets. Updates more frequently than tutorials.
 
 ### Python
 
-  * {% include progress.html complete=50 %} [Basic use in Python](python-basic): Histogrammar with Matplotlib, the most popular Python plotting library, and no custom back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
+  * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
 
 ## Plotting front-ends
 
@@ -35,8 +35,9 @@ Informal repository of usable snippets. Updates more frequently than tutorials.
 
 ### Python
 
-  * {% include progress.html complete=100 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the ROOT analysis package in Python. This tutorial is complete enough that you could start here.
-  * {% include progress.html complete=0 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the Bokeh plotting package in Python.
+  * {% include progress.html complete=50 %} [Making Matplotlib plots](python-matplotlib): How to send Histogrammar data to Matplotlib, the most popular Python plotting library.
+  * {% include progress.html complete=100 %} [Making PyROOT plots](python-pyroot): How to send Histogrammar data to the ROOT analysis package in Python. This tutorial is complete enough that you could start here, if you are a ROOT user.
+  * {% include progress.html complete=90 %} [Making Bokeh plots](python-bokeh): How to send Histogrammar data to the Bokeh plotting package in Python.
 
 ## Aggregation back-ends
 
@@ -48,7 +49,9 @@ Informal repository of usable snippets. Updates more frequently than tutorials.
 
 ### Python
 
-  * {% include progress.html complete=100 %} [Enhancements for Numpy](python-numpy): Aggregating over data in Numpy arrays without a Python for loop (i.e. faster).
+  * {% include progress.html complete=100 %} [Collecting data from Numpy](python-numpy): Aggregating over data in Numpy arrays without a Python for loop (i.e. faster).
+  * {% include progress.html complete=0 %} [Collecting data from ROOT](python-rootjit): Aggregating over data in ROOT TTrees, taking advantage of JIT-compilation for 100X speed-ups.
+  * {% include progress.html complete=0 %} [Collecting data from a GPU](python-gpu): Generating CUDA code to include in your GPU applications or filling data directly from Numpy arrays using PyCUDA.
 
 ## Utility applications
 
@@ -56,11 +59,3 @@ Informal repository of usable snippets. Updates more frequently than tutorials.
 
   * {% include progress.html complete=0 %} [HistogrammarAWK (hgawk)](python-hgawk): pipe data from grep, sed, and awk into Histogrammar to make plots on the UNIX shell.
   * {% include progress.html complete=90 %} [HistogrammarWatch (hgwatch)](python-hgwatch): stream aggregated data as JSON by appending to a file, a UNIX pipe, or through a socket or remote ssh connection to send interactive plots through any interface you can read as text.
-
-## Subroutines
-
-These tutorials contain instructions common to most of the others. If you need one, you'll be referred to it, but they're listed here for completeness.
-
-  * {% include progress.html complete=100 %} [CMS public dataset in Scala](scala-cmsdata): Sample data for plots in Scala.
-  * {% include progress.html complete=100 %} [CMS public dataset in Python](python-cmsdata): The same sample data, accessed in Python.
-

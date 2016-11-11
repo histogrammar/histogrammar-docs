@@ -44,7 +44,7 @@ for _ in simple: labeling.fill(_)
 Start by plotting histogram `one`:
 
 ```python
-glyph_one = one.bokeh()
+glyph_one = one.plot.bokeh()
 plot_one = plot(glyph_one)
 save(plot_one,"python_plot_one.html")
 ```
@@ -54,7 +54,7 @@ save(plot_one,"python_plot_one.html")
 By default, a line glyph of black color is plotted. One can easily turn this into a bar plot filled with red color by passing arguments to `bokeh()` method as follows:
 
 ```python
-glyph_one = one.bokeh(glyphType="histogram",fillColor="red")
+glyph_one = one.plot.bokeh(glyphType="histogram",fillColor="red")
 ```
 
 In addition, default axes titles ('x' and 'y') can be changed to, for instance:
@@ -68,8 +68,8 @@ save(plot_one,"python_plot_one.html")
 To superimpose two histograms booked and filled above on one plot, one create and configure a glyph for each of the histograms, and call the `plot()` method which accepts variable length argument list, and therefore can take any number of glyphs.
 
 ```python
-glyph_one = one.bokeh() #use defaults
-glyph_two = two.bokeh(glyphType="histogram",fillColor="red") #customize
+glyph_one = one.plot.bokeh() #use defaults
+glyph_two = two.plot.bokeh(glyphType="histogram",fillColor="red") #customize
 plot_both = plot(glyph_one,glyph_two)
 save(plot_both,"python_plot_both.html")
 ```
@@ -79,8 +79,8 @@ save(plot_both,"python_plot_both.html")
 Having a `GlyphRenderer` (a type of object returned by the `bokeh()` method) and a `Plot` (a type of object returned by the `plot()` method) objects one can easily put a `Legend` onto the plot using built-in `Bokeh` tools. For instance, given the histograms from the previous example:
 
 ```python
-glyph_one = one.bokeh()
-glyph_two = two.bokeh(glyphType="histogram",fillColor="red")
+glyph_one = one.plot.bokeh()
+glyph_two = two.plot.bokeh(glyphType="histogram",fillColor="red")
 
 from bokeh.models import Legend
 legend = Legend(legends=[("curve1", [glyph_one]), ("curve2", [glyph_two])])
@@ -112,7 +112,7 @@ map(lambda _: three.fill(_),extra)
 Prepare a stacked histogram using a dedicated `build()` method, and plot it: 
 ```python
 s = Stack.build(two,three)
-glyph_stack = s.bokeh() #use defaults
+glyph_stack = s.plot.bokeh() #use defaults
 plot_stack = plot(glyph_stack)
 save(plot_stack,"python_plot_stack.html")
 ```
@@ -143,7 +143,7 @@ two = Histogram(5, -3.0, 7.0, lambda x: x)
 labeling = Label(one=one, two=two)
 for _ in simple: labeling.fill(_)
 
-glyph_one = one.bokeh()
+glyph_one = one.plot.bokeh()
 plot_one = plot(glyph_one)
 view(plot_one)
 ```

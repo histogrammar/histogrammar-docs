@@ -9,17 +9,23 @@ summary: |
 
 ## Preliminaries
 
-This tutorial should be regarded as a sequel to [Collecting data in Spark](../scala-spark), so set up your environment in the same way with the addition of the `histogrammar-sparksql` JAR.
-
-That is, start a Spark Shell with
+This tutorial should be regarded as a sequel to [Collecting data in Spark](../scala-spark), so I'll assume that you already have Spark installed. As before, if your Spark cluster is Spark 2.0 or later, start it with
 
 ```bash
-spark-shell --jars=histogrammar-0.7.1.jar,histogrammar-sparksql-0.7.1.jar
+spark-shell --packages "org.diana-hep:histogrammar-spark_2.11:1.0.3"
 ```
 
-and load the [CMS public data](../scala-cmsdata). Then make an RDD out of `events`:
+Otherwise, start it with
+
+```bash
+spark-shell --packages "org.diana-hep:histogrammar-spark_2.10:1.0.3"
+```
+
+Next, turn the [CMS public data](../scala-cmsdata) into a Spark RDD:
 
 ```scala
+import org.dianahep.histogrammar.tutorial.cmsdata
+val events = cmsdata.EventIterator()
 val rdd = sc.parallelize(events.toList)
 ```
 

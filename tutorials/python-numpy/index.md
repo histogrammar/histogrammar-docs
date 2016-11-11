@@ -11,7 +11,7 @@ summary: |
 
 This tutorial assumes familiarity with using Histogrammar in Python. It only shows how to accelerate your histogram filling with Numpy.
 
-It should work with Histogrammar version 0.8 and above.
+It should work with Histogrammar version 1.0.4 and above.
 
 ## Quick example
 
@@ -29,7 +29,7 @@ for x in arr:
 It would be much faster if you instead did this:
 
 ```python
-histogram.numpy(arr)
+histogram.fill.numpy(arr)
 ```
 
 The result would be the same (`histogram` is now filled), but depending on the complexity of `histogram`, the outcome could be achieved ten to a hundred times sooner.
@@ -116,7 +116,7 @@ and the Numpy approach would be
 
 histogram = Bin(100, 0, 5, lambda data: numpy.sqrt(data["x"]**2 + data["y"]**2))
 
-histogram.numpy(data)
+histogram.fill.numpy(data)
 
 print histogram.numericalValues
 ```
@@ -135,7 +135,7 @@ for datum in data:
 
 ```python
 histogram = Bin(100, 0, 5, "sqrt(x**2 + y**2)")
-histogram.numpy(data)
+histogram.fill.numpy(data)
 ```
 
 The string gets compiled into a Python function using `math.sqrt` for `sqrt` if you don't have Numpy and `numpy.sqrt` if you do. Given `x` and `y` as floating point scalars, Python will compute a floating point scalar, and given `x` and `y` as Numpy arrays, Python will compute a Numpy array. The fact that we passed in a `datum` in the first case and `data` in the second determines how the function will be evaluated, and the fact that we called `fill` in the first case and `numpy` in the second determines how Histogrammar will attempt to use that result.
@@ -162,21 +162,21 @@ yarray = numpy.array([random.gauss(0, 1) for i in xrange(1000000)])
 
 # dict of arrays
 histogram = Bin(100, 0, 5, "sqrt(x**2 + y**2)")
-histogram.numpy({"x": xarray, "y": yarray})
+histogram.fill.numpy({"x": xarray, "y": yarray})
 
 # object of arrays
 histogram = Bin(100, 0, 5, "sqrt(x**2 + y**2)")
-histogram.numpy(Data(xarray, yarray))
+histogram.fill.numpy(Data(xarray, yarray))
 
 # Numpy record array
 r = numpy.rec.array((xarray, yarray), names=["x", "y"])
 histogram = Bin(100, 0, 5, "sqrt(x**2 + y**2)")
-histogram.numpy(r)
+histogram.fill.numpy(r)
 
 # Pandas DataFrame
 df = pandas.DataFrame({"x": xarray, "y": yarray})
 histogram = Bin(100, 0, 5, "sqrt(x**2 + y**2)")
-histogram.numpy(df)
+histogram.fill.numpy(df)
 ```
 
 More could be added (SQLAlchemy?) to Histogrammar's inspection rules. These libraries are not dependencies; if they're not available on your system, Histogrammar will silently not attempt to use them.

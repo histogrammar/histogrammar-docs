@@ -9,25 +9,31 @@ summary: |
 
 ## Preliminaries
 
-This tutorial uses the Scala version of Histogrammar. See the [installation guide](../../install) for installing version 0.7.1 or later.
+This tutorial uses the Scala version of Histogrammar. See the [installation guide](../../install) for installing version 1.0.3 or later.
 
-It also uses Apache Spark. You might already have access to a Spark cluster (and that's why you're here, after all), but if you don't, you can install it yourself [from Spark's website](http://spark.apache.org/downloads.html). Spark can run on a single computer for testing, though its performance advantage comes from parallelizing across a network. The interface on a single computer is identical to the distributed version. For a single-computer installation, choose "pre-built for Hadoop 1.X" (you don't need Hadoop to be installed, only Java). Histogrammar 0.7.1 is built for a version of Scala that is compatible with Spark 1.6.1, so use that, not 2.0.
+It also uses Apache Spark. You might already have access to a Spark cluster (and that's why you're here, after all), but if you don't, you can install it yourself [from Spark's website](http://spark.apache.org/downloads.html). Spark can run on a single computer for testing, though its performance advantage comes from parallelizing across a network. The interface on a single computer is identical to the distributed version. For a single-computer installation, choose "pre-built for Hadoop 1.X" (you don't need Hadoop to be installed, only Java).
 
-Start Spark with Histogrammar loaded like this (and combine with any other options your cluster needs; the following is sufficient for a single-computer installation):
+If your Spark cluster is version 2.0 or later, start it with
 
 ```bash
-spark-shell --jars=histogrammar-0.7.1.jar
+spark-shell --packages "org.diana-hep:histogrammar-sparksql_2.11:1.0.3"
 ```
 
-Finally, this tutorial uses the CMS public data as an example. You can load it into Spark by first following the instructions on the [CMS data page](../scala-cmsdata)* and then uploading them to Spark with this command:
+Otherwise, start it with
+
+```bash
+spark-shell --packages "org.diana-hep:histogrammar-sparksql_2.10:1.0.3"
+```
+
+Finally, this tutorial uses the [CMS public data](../scala-cmsdata) as an example. You can load it into a Spark RDD by passing the `EventIterator` into `sc.parallelize`:
 
 ```scala
+import org.dianahep.histogrammar.tutorial.cmsdata
+val events = cmsdata.EventIterator()
 val rdd = sc.parallelize(events.toList)
 ```
 
 Unlike the other tutorials that download events as you need them, this one downloads them all and puts them in your local Spark installation. It can take 20-30 seconds. Once that's one, you're ready to start analyzing data.
-
-(*If you're familiar with Scala and are thinking about using `:paste` mode to enter the CMS dataset code, don't. It breaks type inference in Spark's `aggregate` method.)
 
 ## First histogram
 

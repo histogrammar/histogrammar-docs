@@ -11,10 +11,11 @@ summary: |
 
 This tutorial uses the Scala version of Histogrammar. See the [installation guide](../../install) for installing version 0.7 or later.
 
-It also uses the [CMS public dataset](../scala-cmsdata). Set up an iterator named `events` in your console. You will need a network connection. If your `events` iterator ever runs out, refresh it with
+It also uses the [CMS public dataset](../scala-cmsdata). Use the following to create an iterator over the data (and refresh it if you use up all the events). You will need a network connection.
 
 ```scala
-val events = EventIterator()
+import org.dianahep.histogrammar.tutorial.cmsdata
+val events = cmsdata.EventIterator()
 ```
 
 ## First histogram
@@ -175,7 +176,7 @@ val pt_vs_phi = Bin(30, -Math.PI, Math.PI,
                     {event: Event => Math.atan2(event.met.py, event.met.px)},
                     value = Average({event: Event => event.met.pt}))
 
-val events = EventIterator()
+val events = cmsdata.EventIterator()
 for (event <- events.take(100000))
   pt_vs_phi.fill(event)
 
@@ -241,7 +242,7 @@ val pt_vs_phi = Bin(30, -Math.PI, Math.PI,
                     {event: Event => Math.atan2(event.met.py, event.met.px)},
                     value = Deviate({event: Event => event.met.pt}))
 
-val events = EventIterator()
+val events = cmsdata.EventIterator()
 for (event <- events.take(100000))
   pt_vs_phi.fill(event)
 
@@ -312,7 +313,7 @@ Here is a sparse two-dimensional histogram. Drawing it is tricky because one has
 val hist2d = SparselyBin(10.0, {event: Event => event.met.px},
                  value = SparselyBin(10.0, {event: Event => event.met.py}))
 
-val events = EventIterator()
+val events = cmsdata.EventIterator()
 for (event <- events.take(1000))
   hist2d.fill(event)
 
@@ -363,7 +364,7 @@ Histogrammar makes common techniques like fractions into first-class citizens. `
 val frac = Fraction({event: Event => event.numPrimaryVertices > 5},
                     Bin(30, 0, 100, {event: Event => event.met.pt}))
 
-val events = EventIterator()
+val events = cmsdata.EventIterator()
 for (event <- events.take(1000000))
   frac.fill(event)
 
