@@ -5,7 +5,7 @@ toc: true
 summary: |
     <p>This page explains how to install Histogrammar in different ways. Use only the instructions relevant to your situation.</p>
 scalaversion: 1.0.4
-pythonversion: 1.0.5
+pythonversion: 1.0.6
 ---
 
 # Get a specific release or the latest from GitHub
