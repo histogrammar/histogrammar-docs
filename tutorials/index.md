@@ -4,19 +4,6 @@ type: homepage
 toc: false
 ---
 
-## Gists
-
-Informal repository of usable snippets. Updates more frequently than tutorials.
-
-<form action="http://gist.github.com/search">
-<div style="margin-left: 150px; margin-right: 150px; min-width: 300px;">
-<div style="display: flex;">
-<div style="width: 100px; margin-right: 5px;"><input type="submit" value="Search for" style="width: 100%"></div>
-<div style="flex-grow: 1;"><input type="text" name="q" value="histogrammar " style="width: 100%"></div>
-</div>
-</div>
-</form>
-
 ## Basics
 
 ### Scala
