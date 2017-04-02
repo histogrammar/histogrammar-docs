@@ -158,13 +158,13 @@ Simply a JSON number (or JSON string "inf" for infinite values) representing the
 Here is a stand-alone Histogrammar document representing one Count.
 
 ```json
-{"version": "0.9", "type": "Count", "data": 123.0}
+{"version": "1.0", "type": "Count", "data": 123.0}
 ```
 
 And here is Count in a more typical context: embedded as values (and underflow, overflow, nanflow) of a [Bin](#bin-regular-binning-for-histograms).
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Bin",
  "data": {
    "low": -5.0,
@@ -228,7 +228,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Sum",
  "data": {"entries": 123.0, "sum": 3.14, "name": "myfunc"}}
 ```
@@ -310,7 +310,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Average",
  "data": {"entries": 123.0, "mean": 3.14, "name": "myfunc"}}
 ```
@@ -420,7 +420,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Deviate",
  "data": {"entries": 123.0, "mean": 3.14, "variance": 0.1, "name": "myfunc"}}
 ```
@@ -482,7 +482,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Minimize",
  "data": {"entries": 123.0, "min": 3.14, "name": "myfunc"}}
 ```
@@ -544,7 +544,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Maximize",
  "data": {"entries": 123.0, "max": 3.14, "name": "myfunc"}}
 ```
@@ -625,7 +625,7 @@ JSON object containing
 **Examples:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Bag",
  "data": {
    "entries": 123.0,
@@ -639,7 +639,7 @@ JSON object containing
 ```
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Bag",
  "data": {
    "entries": 123.0,
@@ -653,7 +653,7 @@ JSON object containing
 ```
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Bag",
  "data": {
    "entries": 123.0,
@@ -776,7 +776,7 @@ JSON object containing
 Here is a five-bin histogram, whose bin centers are at -4, -2, 0, 2, and 4. It counts the number of measurements made at each position.
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Bin",
  "data": {
    "low": -5.0,
@@ -796,7 +796,7 @@ Here is a five-bin histogram, whose bin centers are at -4, -2, 0, 2, and 4. It c
 Here is another five-bin histogram on the same domain, this one quantifying an average value in each bin. The quantity measured by the average has a name (`"average time [s]"`), which would have been a `"name"` field in the JSON objects representing the averages if it had not been specified once in `"values:name"`.
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Bin",
  "data": {
    "low": -5.0,
@@ -916,7 +916,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "SparselyBin",
  "data": {
    "binWidth": 2.0,
@@ -1005,7 +1005,7 @@ JSON object containing
 **Examples:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "CentrallyBin",
  "data": {
    "entries": 123.0,
@@ -1026,7 +1026,7 @@ JSON object containing
 Here is an example with `Average` sub-aggregators:
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "CentrallyBin",
  "data": {
    "entries": 123.0,
@@ -1117,7 +1117,7 @@ JSON object containing
 **Examples:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
@@ -1134,7 +1134,7 @@ JSON object containing
 ```
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "IrregularlyBin",
  "data": {
    "entries": 123.0,
@@ -1220,7 +1220,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Categorize",
  "data": {
    "entries": 123.0,
@@ -1307,7 +1307,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Fraction",
  "data": {
    "entries": 123.0,
@@ -1433,7 +1433,7 @@ JSON object containing
 **Examples:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Stack",
  "data": {
    "entries": 123.0,
@@ -1450,7 +1450,7 @@ JSON object containing
 ```
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Stack",
  "data": {
    "entries": 123.0,
@@ -1526,7 +1526,7 @@ JSON object containing
 **Examples:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Select",
  "data": {
    "entries": 123.0,
@@ -1536,7 +1536,7 @@ JSON object containing
 ```
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Select",
  "data": {
    "entries": 123.0,
@@ -1622,7 +1622,7 @@ The fact that Label requires all contents to have a single type allows the `sub:
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Label",
  "data": {
    "entries": 123.0,
@@ -1693,7 +1693,7 @@ The fact that UntypedLabel allows each element to have a different type forces t
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "UntypedLabel",
  "data": {
    "entries": 123.0,
@@ -1779,7 +1779,7 @@ The fact that Index requires all contents to have a single type allows the `sub:
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Index",
  "data": {
    "entries": 123.0,
@@ -1862,7 +1862,7 @@ JSON object containing
 **Example:**
 
 ```json
-{"version": "0.9",
+{"version": "1.0",
  "type": "Branch",
  "data": {
    "entries": 123.0,
