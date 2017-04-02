@@ -10,9 +10,9 @@ toc: false
 
   * {% include progress.html complete=100 %} [Basic use in Scala](scala-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different, and ASCII-art plots.
 
-### Python
+<!-- ### Python -->
 
-  * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different.
+<!--   * {% include progress.html complete=0 %} [Basic use in Python](python-basic): Histogrammar without any custom front-ends (for plotting) or back-ends (for aggregation). Focuses on the basics of making aggregations, what makes Histogrammar different. -->
 
 ## Plotting front-ends
 
@@ -32,17 +32,17 @@ toc: false
 
   * {% include progress.html complete=100 %} [Collecting data in Spark](scala-spark): How to use your Apache Spark cluster to make histograms, rather than downloading the data and plotting locally.
   * {% include progress.html complete=100 %} [Enhancements for SparkSQL](scala-sparksql): Special bindings to make histograms directly from Apache SparkSQL tables.
-  * {% include progress.html complete=0 %} [Just-in-time compilation in Scala](scala-jit): How to make your aggregations on local data faster.
+  <!-- * {% include progress.html complete=0 %} [Just-in-time compilation in Scala](scala-jit): How to make your aggregations on local data faster. -->
 
 ### Python
 
   * {% include progress.html complete=100 %} [Collecting data from Numpy](python-numpy): Aggregating over data in Numpy arrays without a Python for loop (i.e. faster).
-  * {% include progress.html complete=0 %} [Collecting data from ROOT](python-rootjit): Aggregating over data in ROOT TTrees, taking advantage of JIT-compilation for 100X speed-ups.
-  * {% include progress.html complete=0 %} [Collecting data from a GPU](python-gpu): Generating CUDA code to include in your GPU applications or filling data directly from Numpy arrays using PyCUDA.
+  <!-- * {% include progress.html complete=0 %} [Collecting data from ROOT](python-rootjit): Aggregating over data in ROOT TTrees, taking advantage of JIT-compilation for 100X speed-ups. -->
+  <!-- * {% include progress.html complete=0 %} [Collecting data from a GPU](python-gpu): Generating CUDA code to include in your GPU applications or filling data directly from Numpy arrays using PyCUDA. -->
 
 ## Utility applications
 
 ### Python
 
-  * {% include progress.html complete=0 %} [HistogrammarAWK (hgawk)](python-hgawk): pipe data from grep, sed, and awk into Histogrammar to make plots on the UNIX shell.
+  <!-- * {% include progress.html complete=0 %} [HistogrammarAWK (hgawk)](python-hgawk): pipe data from grep, sed, and awk into Histogrammar to make plots on the UNIX shell. -->
   * {% include progress.html complete=90 %} [HistogrammarWatch (hgwatch)](python-hgwatch): stream aggregated data as JSON by appending to a file, a UNIX pipe, or through a socket or remote ssh connection to send interactive plots through any interface you can read as text.
