@@ -1165,7 +1165,7 @@ Unlike [SparselyBin](#sparselybin-ignore-zeros), this aggregator has the potenti
 Categorize.ing(quantity, value=Count.ing())
 ```
 
-  * `quantity` (function returning double) computes the quantity of interest from the data.
+  * `quantity` (function returning string) computes the quantity of interest from the data.
   * `value` (present-tense aggregator) generates sub-aggregators to put in each bin.
   * `entries` (mutable double) is the number of entries, initially 0.0.
   * `bins` (mutable map from string to present-tense aggregator) is the map, probably a hashmap, to fill with values when their `entries` become non-zero.
