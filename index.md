@@ -1,9 +1,34 @@
 ---
-title: Documentation
 type: default
 toc: false
 custom_css: mainpage
 ---
+
+<div style="height: 100px; margin-bottom: 10px;"><img src="images/histogrammar-logo.png" style="height: 100px;" alt="Histogrammar" /></div>
+
+<div style="text-align: center; margin-bottom: 30px;">
+
+<div style="width: 520px; vertical-align: bottom; display: inline-block; text-align: left;">
+<h2>GitHub Gists</h2>
+<p style="height: 40px; margin-right: 20px;">Informal repository of usable snippets. Gists can be updated more frequently than tutorials.</p>
+<form action="http://gist.github.com/search">
+<div style="margin-left: 50px; margin-right: 50px; min-width: 300px;">
+<div style="display: flex;">
+<div style="width: 100px; margin-right: 5px;"><input type="submit" value="Search for" style="width: 100%"></div>
+<div style="flex-grow: 1;"><input type="text" name="q" value="histogrammar " style="width: 100%"></div>
+</div></div></form></div>
+
+<div style="width: 520px; vertical-align: bottom; display: inline-block; text-align: left;">
+<h2>StackOverflow</h2>
+<p style="height: 40px; margin-right: 20px;">Question-and-answer site for rapid help. Use the <a href="http://stackoverflow.com/questions/tagged/histogrammar">[histogrammar]</a> tag.</p>
+<form action="http://stackoverflow.com/search">
+<div style="margin-left: 50px; margin-right: 50px; min-width: 300px;">
+<div style="display: flex;">
+<div style="width: 100px; margin-right: 5px;"><input type="submit" value="Search for" style="width: 100%"></div>
+<div style="flex-grow: 1;"><input type="text" name="q" value="[histogrammar] " style="width: 100%"></div>
+</div></div></form></div>
+
+</div>
 
 <div style="text-align: center;">
 

@@ -12,13 +12,13 @@ summary: |
 This tutorial should be regarded as a sequel to [Collecting data in Spark](../scala-spark), so I'll assume that you already have Spark installed. As before, if your Spark cluster is Spark 2.0 or later, start it with
 
 ```bash
-spark-shell --packages "org.diana-hep:histogrammar-spark_2.11:1.0.3"
+spark-shell --packages "org.diana-hep:histogrammar-sparksql_2.11:1.0.3"
 ```
 
 Otherwise, start it with
 
 ```bash
-spark-shell --packages "org.diana-hep:histogrammar-spark_2.10:1.0.3"
+spark-shell --packages "org.diana-hep:histogrammar-sparksql_2.10:1.0.3"
 ```
 
 Next, turn the [CMS public data](../scala-cmsdata) into a Spark RDD:
