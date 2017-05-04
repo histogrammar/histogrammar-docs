@@ -47,7 +47,7 @@ import histogrammar as hg
 
 # generate a stream of uniform random numbers
 import random
-data = [random.random() for i in xrange(2000)]
+data = [random.random() for i in range(2000)]
 
 # aggregation structure and fill rule
 histogram = hg.Bin(num=20, low=0, high=1, quantity=lambda x: x, value=hg.Count())
@@ -120,7 +120,7 @@ aggregator.  So far we have demonstrated `Count`.  `Count` is a simple counter
 that adds one to a total each time it is called.  At this point we can start to
 see histogrammar's grammar taking shape.  Notice that `Bin` is a noun, and
 `Count` is a verb.  *Count the number of data points that fall within each
-bin*. 
+bin*.
 
 There are several primitives of this type available, such as `Sum`, `Deviate`,
 `Minimize`, `Maximize`, and more.  They may not be so useful on their own, but
