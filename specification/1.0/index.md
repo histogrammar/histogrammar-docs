@@ -931,7 +931,7 @@ JSON object containing
 
 ## **CentrallyBin:** fully partitioning with centers
 
-Split a quantity into bins defined by irregularly spaced bin centers, with exactly one sub-aggregator filled per datum (the closest one).
+Split a quantity into bins defined by irregularly spaced bin centers, with exactly one sub-aggregator filled per datum (the closest one). When exactly between two centers, select the _righter_ (greater valued) bin. (Thus, the intervals of validity are closed on the left and open on the right, with the exception of positive infinity being included in the last bin, just like [IrregularlyBin](#irregularlybin-fully-partitioning-with-edges).)
 
 Unlike irregular bins defined by low-high ranges, irregular bins defined by bin centers are guaranteed to fully partition the space with no gaps and no overlaps. It could be viewed as cluster scoring in one dimension.
 

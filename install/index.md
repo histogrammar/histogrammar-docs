@@ -5,7 +5,7 @@ toc: true
 summary: |
     <p>This page explains how to install Histogrammar in different ways. Use only the instructions relevant to your situation.</p>
 scalaversion: 1.0.4
-pythonversion: 1.0.8
+pythonversion: 1.0.9
 ---
 
 # Get a specific release or the latest from GitHub
@@ -98,7 +98,7 @@ sudo easy_install histogrammar
 or
 
 ```bash
-sudo pip histogrammar
+sudo pip install histogrammar
 ```
 
 depending on whether you have `pip` installed (recommended). Some systems with both Python 2 and 3 use `easy_install3` and `pip3` to distinguish the Python 3 version.
