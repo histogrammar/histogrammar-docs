@@ -87,3 +87,5 @@ defaults:
 description: "Documentation for the Histogrammar aggregator suite; includes examples of using Histogrammar with third-party products."
 # the description is used in the feed.xml file
 
+
+theme: jekyll-theme-minimal
