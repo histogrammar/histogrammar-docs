@@ -33,41 +33,6 @@ on the Spark prompt. For interaction with Spark-SQL, include `io.github.histogra
 Use `_2.11` for compatibility with Spark 2.x (Scala 2.11).
 
 
-### Java/Scala with Maven
-
-To compile Histogrammar into a project with the Maven build tool, add
-
-```xml
-<dependency>
-  <groupId>io.github.histogrammar</groupId>
-  <artifactId>histogrammar_2.12</artifactId>
-  <version>1.0.11</version>
-</dependency>
-```
-
-to your `<dependencies>` section. Use `_2.11` for compatibility with Scala 2.11.
-
-### Scala with sbt
-
-To use Histogrammar in `sbt console` or to compile it into a project with the sbt build tool, add
-
-```scala
-libraryDependencies += "io.github.histogrammar" %% "histogrammar" % "1.0.11"
-```
-
-to your `build.sbt` file. The double-percent gets the appropriate version of Histogrammar for your version of Scala.
-
-### Quick start
-
-In fact, the easiest way to start an interactive Scala session with histogrammar is simply to make the following `build.sbt`:
-
-```scala
-page.scalaversion := "2.12.13"
-libraryDependencies += "io.github.histogrammar" %% "histogrammar" % "1.0.11"
-```
-
-and run `sbt console`. You don't need to install Scala or anything other than [sbt](http://www.scala-sbt.org/download.html).
-
 ## Python
 
 <a href="https://pypi.python.org/pypi/Histogrammar/">Histogrammar is available on PyPI</a>, a publicly accessible Python repository with dependency management.
@@ -128,3 +93,39 @@ h = df.Bin(100, -5.0, 5.0, df["plotme"] + df["andme"])
 ```
 
 to get a histogram `h` of Column expression `df["plotme"] + df["andme"]`. All of the processing is performed in Java with Spark's DataFrame optimizations.
+
+
+### Java/Scala with Maven
+
+To compile Histogrammar into a project with the Maven build tool, add
+
+```xml
+<dependency>
+  <groupId>io.github.histogrammar</groupId>
+  <artifactId>histogrammar_2.12</artifactId>
+  <version>1.0.11</version>
+</dependency>
+```
+
+to your `<dependencies>` section. Use `_2.11` for compatibility with Scala 2.11.
+
+### Scala with sbt
+
+To use Histogrammar in `sbt console` or to compile it into a project with the sbt build tool, add
+
+```scala
+libraryDependencies += "io.github.histogrammar" %% "histogrammar" % "1.0.11"
+```
+
+to your `build.sbt` file. The double-percent gets the appropriate version of Histogrammar for your version of Scala.
+
+### Quick start
+
+In fact, the easiest way to start an interactive Scala session with histogrammar is simply to make the following `build.sbt`:
+
+```scala
+page.scalaversion := "2.12.13"
+libraryDependencies += "io.github.histogrammar" %% "histogrammar" % "1.0.11"
+```
+
+and run `sbt console`. You don't need to install Scala or anything other than [sbt](http://www.scala-sbt.org/download.html).
