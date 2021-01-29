@@ -72,6 +72,29 @@ h = df.Bin(100, -5.0, 5.0, df["plotme"] + df["andme"])
 to get a histogram `h` of Column expression `df["plotme"] + df["andme"]`. All of the processing is performed in Java with Spark's DataFrame optimizations.
 
 
+## Java/Scala or Apache Spark
+
+<a href="http://search.maven.org/#search|ga|1|histogrammar">Histogrammar is available on Maven Central</a>, a publicly accessible Java/Scala repository with dependency management.
+
+### Apache Spark
+
+To use Histogrammar in the Spark shell, you don't have to download anything. Just start Spark with
+
+```bash
+spark-shell --packages "io.github.histogrammar:histogrammar_2.12:1.0.11"
+```
+
+and call
+
+```scala
+import org.dianahep.histogrammar._
+```
+
+on the Spark prompt. For interaction with Spark-SQL, include `io.github.histogrammar:histogrammar-sparksql_2.12:1.0.11`.
+
+Use `_2.11` for compatibility with Spark 2.x (Scala 2.11).
+
+
 ### Java/Scala with Maven
 
 To compile Histogrammar into a project with the Maven build tool, add
