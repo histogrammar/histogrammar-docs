@@ -10,29 +10,6 @@ pythonversion: 1.0.12
 
 # Install from a public repository
 
-## Java/Scala or Apache Spark
-
-<a href="http://search.maven.org/#search|ga|1|histogrammar">Histogrammar is available on Maven Central</a>, a publicly accessible Java/Scala repository with dependency management.
-
-### Apache Spark
-
-To use Histogrammar in the Spark shell, you don't have to download anything. Just start Spark with
-
-```bash
-spark-shell --packages "io.github.histogrammar:histogrammar_2.12:1.0.11"
-```
-
-and call
-
-```scala
-import org.dianahep.histogrammar._
-```
-
-on the Spark prompt. For interaction with Spark-SQL, include `io.github.histogrammar:histogrammar-sparksql_2.12:1.0.11`.
-
-Use `_2.11` for compatibility with Spark 2.x (Scala 2.11).
-
-
 ## Python
 
 <a href="https://pypi.python.org/pypi/Histogrammar/">Histogrammar is available on PyPI</a>, a publicly accessible Python repository with dependency management.
