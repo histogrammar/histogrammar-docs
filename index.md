@@ -52,6 +52,21 @@ custom_css: mainpage
 
 </div>
 
+## Introduction
+
+Histogrammar is a package for creating histograms, with a Python and Scala implementation. 
+Histogrammar has multiple histogram types, supports numeric and categorical features, and works 
+with Numpy arrays and Pandas and Spark dataframes.
+
+Once a histogram is filled, it's easy to plot it, store it in JSON format (and retrieve it), or convert
+it to Numpy arrays for further analysis.
+
+At its core Histogrammar is a suite of data aggregation primitives designed for use in parallel processing.
+In the simplest case, you can use this to compute histograms, but the generality of the primitives
+allows much more. Please see the examples for details. Enjoy!
+
+
+
 ## Reporting bugs
 
 Report implementation errors on the GitHub Issues tab of the corresponding language version:
