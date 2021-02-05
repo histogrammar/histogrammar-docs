@@ -9,7 +9,7 @@ toc: false
 ### Python
 
   * {% include progress.html complete=100 %} [Basic use in Python](https://nbviewer.jupyter.org/github/histogrammar/histogrammar-python/blob/master/histogrammar/notebooks/histogrammar_tutorial_basic.ipynb): Filling histograms from Numpy arrays and Pandas dataframes, composite histograms, plotting them with Matplotlib, many histograms at once, storing and retrieving them.
-  * {% include progress.html complete=100 %} [Advanced use in Python](https://nbviewer.jupyter.org/github/histogrammar/histogrammar-python/blob/master/histogrammar/notebooks/histogrammar_tutorial_advanced.ipynb): Filling histograms from Spark dataframes, making and configuring many histograms at once.
+  * {% include progress.html complete=100 %} [Advanced use in Python](https://nbviewer.jupyter.org/github/histogrammar/histogrammar-python/blob/master/histogrammar/notebooks/histogrammar_tutorial_advanced.ipynb): Filling histograms from Spark dataframes, making and configuring many histograms at once from a dataframe.
 
 ### Scala
 
