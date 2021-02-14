@@ -13,16 +13,16 @@ This tutorial uses the Scala version of Histogrammar. See the [installation guid
 
 It also uses Apache Spark. You might already have access to a Spark cluster (and that's why you're here, after all), but if you don't, you can install it yourself [from Spark's website](http://spark.apache.org/downloads.html). Spark can run on a single computer for testing, though its performance advantage comes from parallelizing across a network. The interface on a single computer is identical to the distributed version. For a single-computer installation, choose "pre-built for Hadoop 1.X" (you don't need Hadoop to be installed, only Java).
 
-If your Spark cluster is version 2.0 or later, start it with
+If your Spark cluster is version 3.0 or later, start it with
 
 ```bash
-spark-shell --packages "org.diana-hep:histogrammar-sparksql_2.11:1.0.3"
+spark-shell --packages "io.github.histogrammar:histogrammar_2.12:1.0.11,io.github.histogrammar:histogrammar-sparksql_2.12:1.0.11"
 ```
 
 Otherwise, start it with
 
 ```bash
-spark-shell --packages "org.diana-hep:histogrammar-sparksql_2.10:1.0.3"
+spark-shell --packages "io.github.histogrammar:histogrammar_2.11:1.0.11,io.github.histogrammar:histogrammar-sparksql_2.11:1.0.11"
 ```
 
 Finally, this tutorial uses the [CMS public data](../scala-cmsdata) as an example. You can load it into a Spark RDD by passing the `EventIterator` into `sc.parallelize`:
