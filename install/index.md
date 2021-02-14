@@ -58,12 +58,10 @@ Use `_2.11` for compatibility with Spark 2.x (Scala 2.11).
 In PySpark, you should be able to call
 
 ```python
-from histogrammar import *
-import histogrammar.sparksql
-histogrammar.sparksql.addMethods(df)
+import histogrammar
 ```
 
-where `df` is a `DataFrame` that you would like to enable with Histogrammar. You can now call
+where `df` is a `DataFrame` that you would like to use with Histogrammar. You can now call
 
 ```python
 h = df.hg_Bin(100, -5.0, 5.0, df["plotme"] + df["andme"])
