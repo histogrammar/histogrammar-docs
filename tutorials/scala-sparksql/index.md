@@ -9,7 +9,7 @@ summary: |
 
 ## Preliminaries
 
-This tutorial should be regarded as a sequel to [Collecting data in Spark](../scala-spark), so I'll assume that you already have Spark installed. As before, if your Spark cluster is Spark 2.0 or later, start it with
+This tutorial should be regarded as a sequel to [Collecting data in Spark](../scala-spark), so I'll assume that you already have Spark installed. As before, if your Spark cluster is Spark 3.0 or later, start it with
 
 ```bash
 spark-shell --packages "io.github.histogrammar:histogrammar_2.12:1.0.11,io.github.histogrammar:histogrammar-sparksql_2.12:1.0.11"
@@ -18,7 +18,7 @@ spark-shell --packages "io.github.histogrammar:histogrammar_2.12:1.0.11,io.githu
 Otherwise, start it with
 
 ```bash
-spark-shell --packages "io.github.histogrammar:histogrammar_2.12:1.0.11,io.github.histogrammar:histogrammar-sparksql_2.12:1.0.11"
+spark-shell --packages "io.github.histogrammar:histogrammar_2.11:1.0.11,io.github.histogrammar:histogrammar-sparksql_2.11:1.0.11"
 ```
 
 Next, turn the [CMS public data](../scala-cmsdata) into a Spark RDD:
